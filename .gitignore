@@ -1,0 +1,39 @@
+# Maven
+target/
+*.pom.properties
+*.pom.sha1
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.rar
+
+# IDEs and Editors
+.idea/
+*.iml
+*.iws
+.settings/
+.classpath
+.project
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Node/Angular (for future frontend)
+node_modules/
+.angular/
+dist/
+
+# Local configuration env files
+.env
+.env.local
+application-local.properties
