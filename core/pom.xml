@@ -47,6 +47,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<dependency>
+			<!-- Spring Security: Diperlukan untuk mengamankan endpoint internal.
+			     Di sini tidak digunakan untuk validasi JWT (tugas Gateway),
+			     melainkan untuk mengkonfigurasi akses berbasis header X-User-Id. -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.postgresql</groupId>
