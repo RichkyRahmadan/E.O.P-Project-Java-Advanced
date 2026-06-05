@@ -1,0 +1,23 @@
+# =============================================================================
+# E.O.P CORE FINANCE SERVICE — application.properties.example
+# SALIN file ini menjadi application.properties dan isi nilainya.
+# =============================================================================
+
+server.port=8082
+spring.application.name=eop-core-finance
+
+# PostgreSQL — eop_finance_db
+spring.datasource.url=jdbc:postgresql://localhost:5432/eop_finance_db
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_POSTGRES_PASSWORD
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# MongoDB — eop_transaction_log
+spring.data.mongodb.uri=mongodb://localhost:27017/eop_transaction_log
+
+logging.level.com.priestess.core=DEBUG

@@ -1,5 +1,6 @@
 package com.priestess.oracle.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -100,33 +101,19 @@ public class ComplaintDocument {
     @Builder
     public static class AiAnalysis {
 
-        /**
-         * Kategori keluhan yang diidentifikasi AI.
-         * Contoh: {@code TRANSACTION_ERROR}, {@code ACCOUNT_ISSUE},
-         * {@code FRAUD_REPORT}, {@code GENERAL_INQUIRY}
-         */
         private String category;
 
-        /**
-         * Tingkat prioritas: {@code LOW}, {@code MEDIUM}, atau {@code HIGH}.
-         * Jika {@code HIGH}, email notifikasi akan dikirim ke Admin.
-         */
         private String priority;
 
-        /**
-         * Sentimen pesan: {@code POSITIVE}, {@code NEUTRAL}, atau {@code NEGATIVE}.
-         */
         private String sentiment;
 
-        /**
-         * Skor kepercayaan hasil analisis (0.0 - 1.0).
-         * Nilai mendekati 1.0 berarti AI sangat yakin dengan analisisnya.
-         */
         private Double score;
 
         /**
-         * Saran balasan yang dibuat AI untuk digunakan oleh tim support.
+         * Saran balasan dari AI. Gemini mengembalikan key "suggestedReply"
+         * sesuai prompt — @JsonProperty memastikan deserialisasi benar.
          */
+        @JsonProperty("suggestedReply")
         private String suggestedReply;
     }
 }

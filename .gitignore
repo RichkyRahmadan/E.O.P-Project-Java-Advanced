@@ -1,4 +1,6 @@
-# Maven
+# =============================================================================
+# Maven Build Artifacts
+# =============================================================================
 target/
 *.pom.properties
 *.pom.sha1
@@ -8,7 +10,9 @@ target/
 *.tar.gz
 *.rar
 
+# =============================================================================
 # IDEs and Editors
+# =============================================================================
 .idea/
 *.iml
 *.iws
@@ -16,6 +20,7 @@ target/
 .classpath
 .project
 .metadata/
+.factorypath
 bin/
 tmp/
 *.tmp
@@ -24,16 +29,34 @@ tmp/
 *~
 .DS_Store
 
+# =============================================================================
 # Logs
+# =============================================================================
 *.log
 logs/
 
-# Node/Angular (for future frontend)
+# =============================================================================
+# Node / Angular Frontend
+# =============================================================================
 node_modules/
 .angular/
 dist/
+out-tsc/
 
-# Local configuration env files
+# =============================================================================
+# KEAMANAN — File konfigurasi berisi kredensial TIDAK BOLEH masuk ke Git
+# Setiap developer harus membuat file ini secara lokal di komputernya sendiri.
+# =============================================================================
+**/application.properties
+**/application.yml
+**/application-*.properties
+**/application-*.yml
+
+# Kecualikan file konfigurasi template/example yang BOLEH di-commit
+!**/application.properties.example
+!**/application.yml.example
+
+# Env files
 .env
 .env.local
-application-local.properties
+.env.*.local

@@ -1,0 +1,159 @@
+<div class="dashboard-container animate-fade-in">
+  <!-- Topbar Header -->
+  <header class="dashboard-header glass-panel">
+    <div class="header-logo">
+      <span class="logo-eye">👁️</span>
+      <h2>E.O.P Merchant</h2>
+      <span class="badge badge-active font-display">{{ userRole }}</span>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/support" id="link-support" class="btn btn-secondary">Support / AI</a>
+      <button (click)="onLogout()" id="btn-logout" class="btn btn-danger">Keluar</button>
+    </div>
+  </header>
+
+  <!-- KYC Verification Warning Banner -->
+  <div *ngIf="userStatus === 'PENDING'" id="merchant-kyc-banner" class="alert alert-error kyc-banner">
+    <h3>⚠️ Merchant Belum Terverifikasi (PENDING KYC)</h3>
+    <p>Fitur penagihan QRIS dinonaktifkan sementara. Silakan hubungi admin untuk melakukan verifikasi status toko Anda.</p>
+  </div>
+
+  <main class="dashboard-content">
+    <!-- Left Section: QRIS Invoice Management -->
+    <section class="dashboard-main">
+      <!-- Wallet Balance Panel -->
+      <div class="glass-panel wallet-card merchant-wallet">
+        <div class="wallet-header">
+          <p class="label">Pendapatan Toko / Saldo</p>
+          <span class="wallet-id">Merchant Wallet ID: {{ wallet?.id || 'Memuat...' }}</span>
+        </div>
+        <h1 class="balance-display" id="merchant-balance-val">
+          Rp{{ wallet ? wallet.balance.toLocaleString() : '0.00' }}
+        </h1>
+        <div class="wallet-footer">
+          <p>Tipe Akun: <strong>MERCHANT</strong></p>
+          <p>Status: <span [class]="'badge badge-' + userStatus.toLowerCase()">{{ userStatus }}</span></p>
+        </div>
+      </div>
+
+      <!-- Core QRIS Tool -->
+      <div class="qris-workspace" *ngIf="userStatus === 'ACTIVE'">
+        <!-- Phase 1: QRIS Generator Form -->
+        <div *ngIf="!generatedInvoice" class="glass-panel action-card">
+          <h3>⚡ Generate Invoice QRIS Dinamis</h3>
+          <p class="card-desc">Buat QRIS sekali pakai dengan nominal tertentu. Pelanggan Anda dapat men-scan kode ini untuk membayar.</p>
+          
+          <div *ngIf="qrisError" id="qris-gen-error" class="alert alert-error">{{ qrisError }}</div>
+
+          <form (ngSubmit)="onGenerateQris()" #qrisFormRef="ngForm" class="action-form">
+            <div class="form-group">
+              <label for="qrisAmount">Jumlah Tagihan (Rp)</label>
+              <input 
+                type="number" 
+                id="qrisAmount" 
+                name="qrisAmount" 
+                [(ngModel)]="qrisForm.amount" 
+                placeholder="Masukkan nominal tagihan" 
+                required 
+                min="100">
+            </div>
+            <div class="form-group">
+              <label for="qrisNote">Keterangan / Catatan</label>
+              <input 
+                type="text" 
+                id="qrisNote" 
+                name="qrisNote" 
+                [(ngModel)]="qrisForm.note" 
+                placeholder="Contoh: Kopi Susu Extra Shot">
+            </div>
+            <button 
+              type="submit" 
+              id="btn-generate-qris" 
+              class="btn btn-primary" 
+              [disabled]="qrisLoading || !qrisFormRef.valid">
+              <span>{{ qrisLoading ? 'Membuat Invoice...' : 'Buat QRIS Tagihan' }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Phase 2: Live QRIS Invoice Screen (With Polling Status) -->
+        <div *ngIf="generatedInvoice" class="glass-panel qris-presentation-card animate-fade-in">
+          <div class="presentation-header">
+            <h3>QRIS Dinamis E.O.P</h3>
+            <button (click)="clearInvoiceScreen()" class="btn btn-secondary btn-sm">Tutup Layar</button>
+          </div>
+
+          <div class="qris-display-grid">
+            <!-- Simulated QR Code Graphics -->
+            <div class="qr-visual-box">
+              <div class="qr-code-frame">
+                <!-- Glowing borders and mock QR layout -->
+                <div class="qr-corner qr-top-left"></div>
+                <div class="qr-corner qr-top-right"></div>
+                <div class="qr-corner qr-bottom-left"></div>
+                <div class="qr-center-eye">👁️</div>
+                <div class="qr-patterns-mock"></div>
+              </div>
+              <p class="qr-code-text">Invoice ID: <code>{{ generatedInvoice.invoiceId }}</code></p>
+            </div>
+
+            <!-- Status & Details Panel -->
+            <div class="invoice-status-panel">
+              <div class="detail-row">
+                <span class="lbl">Total Tagihan</span>
+                <span class="val text-glow font-display">Rp{{ generatedInvoice.amount.toLocaleString() }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="lbl">Catatan</span>
+                <span class="val">{{ generatedInvoice.note || '-' }}</span>
+              </div>
+
+              <!-- Live Polling Status Indicator -->
+              <div class="status-indicator-box">
+                <div *ngIf="paymentStatus === 'PENDING'" class="status-state pending">
+                  <div class="spinner"></div>
+                  <p class="pulse-text">Menunggu Pembayaran Pelanggan...</p>
+                  <p class="sub-text">Halaman ini diperbarui otomatis setiap 3 detik.</p>
+                </div>
+
+                <div *ngIf="paymentStatus === 'SUCCESS'" class="status-state success animate-fade-in">
+                  <span class="success-icon">✅</span>
+                  <h4>PEMBAYARAN BERHASIL!</h4>
+                  <p class="sub-text">Saldo Anda telah diperbarui.</p>
+                </div>
+
+                <div *ngIf="paymentStatus === 'FAILED'" class="status-state failed animate-fade-in">
+                  <span class="failed-icon">❌</span>
+                  <h4>TRANSAKSI GAGAL</h4>
+                  <p class="sub-text">Pembayaran dibatalkan atau ditolak.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Section: Transaction Logs -->
+    <aside class="dashboard-side">
+      <div class="glass-panel info-card">
+        <h3>📊 Mutasi Kasir Terakhir</h3>
+        <p class="card-desc">Daftar transaksi QRIS sukses pada sesi ini.</p>
+        
+        <div class="logs-list" *ngIf="transactionLogs.length > 0; else noLogs">
+          <div class="log-item animate-fade-in" *ngFor="let log of transactionLogs">
+            <div class="log-info">
+              <p class="log-note">{{ log.note || 'Transaksi QRIS' }}</p>
+              <p class="log-time">{{ log.createdAt | date:'shortTime' }}</p>
+            </div>
+            <span class="log-amount text-glow">+Rp{{ log.amount.toLocaleString() }}</span>
+          </div>
+        </div>
+        
+        <ng-template #noLogs>
+          <p class="empty-logs text-muted">Belum ada transaksi pada sesi ini.</p>
+        </ng-template>
+      </div>
+    </aside>
+  </main>
+</div>

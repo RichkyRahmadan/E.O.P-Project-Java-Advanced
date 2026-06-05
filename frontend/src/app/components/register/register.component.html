@@ -1,0 +1,68 @@
+<div class="login-wrapper animate-fade-in">
+  <div class="glass-panel login-card">
+    <div class="brand-header">
+      <div class="priestess-eye">👁️</div>
+      <h1>Registrasi User</h1>
+      <p class="subtitle">E.O.P — Buat akun Dompet Digital baru</p>
+    </div>
+
+    <div *ngIf="errorMessage" id="register-error-alert" class="alert alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm" class="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          [(ngModel)]="userData.username" 
+          placeholder="Min. 3 karakter" 
+          required 
+          minlength="3"
+          #usernameInput="ngModel">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          [(ngModel)]="userData.email" 
+          placeholder="contoh@domain.com" 
+          required 
+          email
+          #emailInput="ngModel">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          [(ngModel)]="userData.password" 
+          placeholder="Min. 8 karakter" 
+          required 
+          minlength="8"
+          #passwordInput="ngModel">
+      </div>
+
+      <button 
+        type="submit" 
+        id="btn-register-submit" 
+        class="btn btn-primary btn-block" 
+        [disabled]="loading || !registerForm.valid">
+        <span *ngIf="!loading">Daftar Sekarang</span>
+        <span *ngIf="loading">Memproses...</span>
+      </button>
+    </form>
+
+    <div class="footer-links">
+      <p>Sudah punya akun? <a routerLink="/login" id="link-login">Masuk disini</a></p>
+      <p>Ingin berjualan? <a routerLink="/register-merchant" id="link-register-merchant" class="merchant-link">Daftar Merchant</a></p>
+    </div>
+  </div>
+</div>

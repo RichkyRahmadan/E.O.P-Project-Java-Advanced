@@ -1,50 +1,41 @@
 # =============================================================================
-# E.O.P SUPPORT & ORACLE SERVICE — application.properties
-# Port 8083 | MongoDB (eop_support_db) + JavaMailSender + Gemini AI API
+# E.O.P SUPPORT & ORACLE SERVICE — application.properties.example
+# SALIN file ini menjadi application.properties dan isi nilainya.
 # =============================================================================
 
 server.port=8083
 spring.application.name=eop-oracle-support
 
-# =============================================================================
-# MONGODB — eop_support_db
-# =============================================================================
+# MongoDB
 spring.data.mongodb.uri=mongodb://localhost:27017/eop_support_db
 
 # =============================================================================
 # GOOGLE GEMINI AI API
-# Ganti nilai ini dengan API Key Anda dari Google AI Studio:
-# https://aistudio.google.com/app/apikey
+# Dapatkan API Key dari: https://aistudio.google.com/app/apikey
 # =============================================================================
 gemini.api.key=YOUR_GEMINI_API_KEY_HERE
 gemini.api.url=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
 
 # =============================================================================
 # JAVA MAIL SENDER (Gmail SMTP)
-# Gunakan App Password Gmail, bukan password akun biasa.
-# Aktifkan 2FA di akun Google, lalu buat App Password di:
-# https://myaccount.google.com/apppasswords
+# Gunakan App Password, bukan password biasa!
+# Cara: https://myaccount.google.com/apppasswords
 # =============================================================================
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 spring.mail.username=YOUR_GMAIL@gmail.com
-spring.mail.password=YOUR_GMAIL_APP_PASSWORD
+spring.mail.password=YOUR_GMAIL_APP_PASSWORD_16_CHARS
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.starttls.required=true
 
-# Alamat email Admin yang akan menerima notifikasi keluhan prioritas HIGH
-eop.admin.email=admin@eop.priestess.com
+# Email admin penerima notifikasi priority HIGH
+eop.admin.email=YOUR_ADMIN_EMAIL@gmail.com
 
-# =============================================================================
-# ASYNC — Konfigurasi thread pool untuk @Async
-# =============================================================================
+# Async thread pool
 spring.task.execution.pool.core-size=5
 spring.task.execution.pool.max-size=10
 spring.task.execution.pool.queue-capacity=100
 spring.task.execution.thread-name-prefix=oracle-async-
 
-# =============================================================================
-# LOGGING
-# =============================================================================
 logging.level.com.priestess.oracle=DEBUG

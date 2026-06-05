@@ -1,0 +1,35 @@
+@import '../user-dashboard/user-dashboard.component.css';
+
+/* Admin Specific Theme Overrides */
+.admin-header {
+  background: linear-gradient(135deg, rgba(20, 27, 45, 0.8) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.admin-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.border-danger {
+  border-color: rgba(239, 68, 68, 0.25) !important;
+  background: linear-gradient(135deg, rgba(20, 27, 45, 0.8) 0%, rgba(239, 68, 68, 0.08) 100%);
+}
+
+.border-danger:hover {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+.log-target {
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.log-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}

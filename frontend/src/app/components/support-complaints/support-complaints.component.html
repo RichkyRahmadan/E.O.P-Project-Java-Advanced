@@ -1,0 +1,216 @@
+<div class="dashboard-container animate-fade-in">
+  <!-- Header bar -->
+  <header class="dashboard-header glass-panel">
+    <div class="header-logo">
+      <span class="logo-eye">👁️</span>
+      <h2>Pusat Pengaduan E.O.P</h2>
+    </div>
+    <div>
+      <button (click)="backToDashboard()" class="btn btn-secondary" id="btn-back-dashboard">
+        ⬅️ Kembali Ke Dashboard
+      </button>
+    </div>
+  </header>
+
+  <div class="support-grid">
+    <!-- LEFT PANEL: USER SUBMISSION FORM OR ADMIN FILTER -->
+    <div class="support-actions-panel">
+      <!-- 1. USER SUBMISSION FORM -->
+      <div *ngIf="userRole !== 'ADMIN'" class="glass-panel action-card">
+        <h3>✉️ Kirim Keluhan Baru</h3>
+        <p class="card-desc">Tulis keluhan transaksi Anda di sini. Gemini AI akan menganalisis pesan Anda secara instan.</p>
+        
+        <div *ngIf="submitError" id="submit-error" class="alert alert-error">{{ submitError }}</div>
+        <div *ngIf="submitSuccess" id="submit-success" class="alert alert-success">{{ submitSuccess }}</div>
+
+        <form (ngSubmit)="onSubmitComplaint()" #complaintFormRef="ngForm" class="action-form">
+          <div class="form-group">
+            <label for="invoiceId">Invoice ID Terkait (Opsional)</label>
+            <input 
+              type="text" 
+              id="invoiceId" 
+              name="invoiceId" 
+              [(ngModel)]="complaintForm.invoiceId" 
+              placeholder="Contoh: TX-qris-xxxx">
+          </div>
+          <div class="form-group">
+            <label for="rawMessage">Deskripsi Masalah / Keluhan</label>
+            <textarea 
+              id="rawMessage" 
+              name="rawMessage" 
+              [(ngModel)]="complaintForm.rawMessage" 
+              placeholder="Jelaskan kendala transaksi Anda secara rinci" 
+              required 
+              rows="5"></textarea>
+          </div>
+          <button 
+            type="submit" 
+            id="btn-submit-complaint" 
+            class="btn btn-primary" 
+            [disabled]="loading || !complaintFormRef.valid">
+            <span>{{ loading ? 'Mengirim...' : 'Kirim Laporan' }}</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- 2. ADMIN FILTER CONTROLS -->
+      <div *ngIf="userRole === 'ADMIN'" class="glass-panel action-card">
+        <h3>⚙️ Filter Pengaduan</h3>
+        <p class="card-desc">Kelola keluhan masuk berdasarkan status penanganan.</p>
+        
+        <div class="filter-buttons">
+          <button 
+            (click)="onFilterStatusChange('OPEN')" 
+            [class]="'btn ' + (adminFilterStatus === 'OPEN' ? 'btn-primary' : 'btn-secondary')"
+            id="btn-filter-open">
+            OPEN
+          </button>
+          <button 
+            (click)="onFilterStatusChange('IN_PROGRESS')" 
+            [class]="'btn ' + (adminFilterStatus === 'IN_PROGRESS' ? 'btn-primary' : 'btn-secondary')"
+            id="btn-filter-inprogress">
+            IN PROGRESS
+          </button>
+          <button 
+            (click)="onFilterStatusChange('RESOLVED')" 
+            [class]="'btn ' + (adminFilterStatus === 'RESOLVED' ? 'btn-primary' : 'btn-secondary')"
+            id="btn-filter-resolved">
+            RESOLVED
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: COMPLAINT LISTINGS -->
+    <div class="support-list-panel">
+      <!-- USER/MERCHANT VIEW -->
+      <div *ngIf="userRole !== 'ADMIN'" class="glass-panel complaints-list-card">
+        <h3>📋 Riwayat Keluhan Anda</h3>
+        
+        <div class="complaints-list" *ngIf="myComplaints.length > 0; else noComplaints">
+          <div class="complaint-item" *ngFor="let item of myComplaints">
+            <div class="item-meta">
+              <span [class]="'badge badge-' + item.status.toLowerCase()">{{ item.status }}</span>
+              <span class="item-date">{{ item.createdAt | date:'short' }}</span>
+            </div>
+            <p class="item-excerpt">{{ item.rawMessage | slice:0:100 }}{{ item.rawMessage.length > 100 ? '...' : '' }}</p>
+            <button (click)="selectComplaint(item)" class="btn btn-secondary btn-sm" id="btn-view-detail">
+              🔎 Lihat Analisis AI
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN VIEW -->
+      <div *ngIf="userRole === 'ADMIN'" class="glass-panel complaints-list-card">
+        <h3>📋 Daftar Pengaduan Masuk ({{ adminFilterStatus }})</h3>
+        
+        <div *ngIf="adminLoading" class="text-center padding-y">
+          <div class="spinner inline"></div> Loading data...
+        </div>
+
+        <div class="complaints-list" *ngIf="!adminLoading && adminComplaints.length > 0; else noComplaints">
+          <div class="complaint-item admin-item" *ngFor="let item of adminComplaints">
+            <div class="item-meta">
+              <span class="user-info">{{ item.username }} ({{ item.email }})</span>
+              <span class="item-date">{{ item.createdAt | date:'short' }}</span>
+            </div>
+            <p class="item-excerpt">{{ item.rawMessage | slice:0:150 }}...</p>
+            
+            <div class="admin-item-actions">
+              <span *ngIf="item.aiAnalysis" [class]="'badge-priority badge-' + item.aiAnalysis.priority.toLowerCase()">
+                Priority: {{ item.aiAnalysis.priority }}
+              </span>
+              <button (click)="selectComplaint(item)" class="btn btn-primary btn-sm" id="btn-admin-view">
+                🛠️ Kelola & Jawab
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPLATE FOR EMPTY LISTS -->
+      <ng-template #noComplaints>
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p>Belum ada laporan pengaduan tercatat.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- COMPLAINT DETAILS MODAL / DETAILS PANEL -->
+  <div *ngIf="selectedComplaint" class="modal-overlay animate-fade-in">
+    <div class="glass-panel modal-card">
+      <div class="modal-header">
+        <h3>Detail Pengaduan</h3>
+        <button (click)="closeModal()" class="btn btn-secondary btn-sm">❌ Tutup</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Message Details -->
+        <div class="section-box">
+          <p class="section-title">Informasi Pengirim & Laporan</p>
+          <div class="info-grid">
+            <p><strong>Pengirim:</strong> {{ selectedComplaint.username }} ({{ selectedComplaint.email }})</p>
+            <p><strong>Invoice Terkait:</strong> {{ selectedComplaint.invoiceId || 'Tidak Ada' }}</p>
+            <p><strong>Tanggal Kirim:</strong> {{ selectedComplaint.createdAt | date:'medium' }}</p>
+            <p><strong>Status Tiket:</strong> <span [class]="'badge badge-' + selectedComplaint.status.toLowerCase()">{{ selectedComplaint.status }}</span></p>
+          </div>
+          <div class="message-text">
+            <p><strong>Isi Pesan:</strong></p>
+            <p class="text-block">{{ selectedComplaint.rawMessage }}</p>
+          </div>
+        </div>
+
+        <!-- Google Gemini AI Analysis Box -->
+        <div class="section-box ai-analysis-box" *ngIf="selectedComplaint.aiAnalysis">
+          <p class="section-title text-glow">✨ Analisis Cerdas Google Gemini AI</p>
+          
+          <div class="ai-metrics-grid">
+            <div class="metric">
+              <span class="label">Kategori</span>
+              <span class="val">{{ selectedComplaint.aiAnalysis.category }}</span>
+            </div>
+            <div class="metric">
+              <span class="label">Prioritas</span>
+              <span [class]="'val badge-' + selectedComplaint.aiAnalysis.priority.toLowerCase()">
+                {{ selectedComplaint.aiAnalysis.priority }}
+              </span>
+            </div>
+            <div class="metric">
+              <span class="label">Sentimen</span>
+              <span class="val">{{ selectedComplaint.aiAnalysis.sentiment }} (Score: {{ selectedComplaint.aiAnalysis.score }})</span>
+            </div>
+          </div>
+
+          <div class="ai-reply">
+            <p><strong>Saran Balasan Otomatis (Suggested Reply):</strong></p>
+            <p class="ai-reply-text">{{ selectedComplaint.aiAnalysis.suggestedReply }}</p>
+          </div>
+        </div>
+
+        <!-- Admin Action Section inside Modal -->
+        <div class="admin-modal-actions" *ngIf="userRole === 'ADMIN'">
+          <p><strong>Tindakan Admin:</strong></p>
+          <div class="action-buttons">
+            <button 
+              *ngIf="selectedComplaint.status === 'OPEN'"
+              (click)="onUpdateStatus(selectedComplaint.complaintId, 'IN_PROGRESS')" 
+              class="btn btn-primary"
+              id="btn-mark-inprogress">
+              ⚙️ Kerjakan (Set IN_PROGRESS)
+            </button>
+            <button 
+              *ngIf="selectedComplaint.status !== 'RESOLVED'"
+              (click)="onUpdateStatus(selectedComplaint.complaintId, 'RESOLVED')" 
+              class="btn btn-secondary"
+              id="btn-mark-resolved">
+              ✅ Selesaikan (Set RESOLVED)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="login-wrapper animate-fade-in">
+  <div class="glass-panel login-card">
+    <div class="brand-header">
+      <div class="priestess-eye">👁️</div>
+      <h1>E.O.P</h1>
+      <p class="subtitle">Eyes Of Priestess — Digital Wallet</p>
+    </div>
+
+    <div *ngIf="errorMessage" id="login-error-alert" class="alert alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          [(ngModel)]="credentials.username" 
+          placeholder="Masukkan username Anda" 
+          required 
+          #usernameInput="ngModel">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          [(ngModel)]="credentials.password" 
+          placeholder="Masukkan password Anda" 
+          required 
+          #passwordInput="ngModel">
+      </div>
+
+      <button 
+        type="submit" 
+        id="btn-login-submit" 
+        class="btn btn-primary btn-block" 
+        [disabled]="loading || !loginForm.valid">
+        <span *ngIf="!loading">Masuk</span>
+        <span *ngIf="loading">Memuat...</span>
+      </button>
+    </form>
+
+    <div class="footer-links">
+      <p>Belum punya akun? <a routerLink="/register" id="link-register">Daftar User</a></p>
+      <p>Ingin jualan? <a routerLink="/register-merchant" id="link-register-merchant" class="merchant-link">Daftar Merchant</a></p>
+    </div>
+  </div>
+</div>

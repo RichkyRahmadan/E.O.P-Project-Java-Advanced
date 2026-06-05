@@ -53,14 +53,23 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
-			<!-- @Async + @Retryable untuk analisis AI di background -->
+			<!-- @Retryable untuk retry analisis AI -->
+			<!-- spring-retry 2.0.x kompatibel dengan Spring Boot 3.x/4.x -->
 			<groupId>org.springframework.retry</groupId>
 			<artifactId>spring-retry</artifactId>
+			<version>2.0.9</version>
 		</dependency>
 		<dependency>
-			<!-- Wajib agar @EnableRetry berjalan dengan @Retryable -->
+			<!-- spring-aspects wajib untuk @Retryable via Spring AOP proxy -->
+			<!-- Versi dikelola oleh Spring Boot BOM (org.springframework groupId) -->
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-aspects</artifactId>
+		</dependency>
+		<dependency>
+			<!-- jackson-databind untuk parsing JSON response Gemini API -->
+			<!-- Sudah termasuk dalam spring-boot-starter-webmvc, tapi dinyatakan eksplisit -->
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>

@@ -1,0 +1,130 @@
+<div class="dashboard-container animate-fade-in">
+  <!-- Topbar Header -->
+  <header class="dashboard-header glass-panel admin-header">
+    <div class="header-logo">
+      <span class="logo-eye">👁️</span>
+      <h2>E.O.P Admin</h2>
+      <span class="badge badge-suspended font-display">System Administrator</span>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/support" id="link-admin-support" class="btn btn-secondary">Keluhan Support (Admin View)</a>
+      <button (click)="onLogout()" id="btn-logout" class="btn btn-danger">Keluar</button>
+    </div>
+  </header>
+
+  <main class="dashboard-content">
+    <!-- Left Section: Action Panels -->
+    <section class="dashboard-main">
+      <div class="admin-grid">
+        <!-- 1. Verify KYC Card -->
+        <div class="glass-panel action-card">
+          <h3>👤 Verifikasi KYC Pengguna</h3>
+          <p class="card-desc">Ubah status pengguna dari PENDING menjadi ACTIVE agar dapat menggunakan fitur keuangan dompet.</p>
+          
+          <div *ngIf="kycError" id="kyc-error" class="alert alert-error">{{ kycError }}</div>
+          <div *ngIf="kycSuccess" id="kyc-success" class="alert alert-success">{{ kycSuccess }}</div>
+
+          <form (ngSubmit)="onVerifyKyc()" #kycForm="ngForm" class="action-form">
+            <div class="form-group">
+              <label for="targetUserIdKyc">User ID (UUID)</label>
+              <input 
+                type="text" 
+                id="targetUserIdKyc" 
+                name="targetUserIdKyc" 
+                [(ngModel)]="targetUserIdKyc" 
+                placeholder="Masukkan UUID User" 
+                required>
+            </div>
+            <button 
+              type="submit" 
+              id="btn-verify-kyc" 
+              class="btn btn-primary" 
+              [disabled]="kycLoading || !kycForm.valid">
+              <span>{{ kycLoading ? 'Memproses...' : 'Aktifkan Akun' }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 2. Verify Merchant Card -->
+        <div class="glass-panel action-card">
+          <h3>🏪 Verifikasi Merchant Baru</h3>
+          <p class="card-desc">Verifikasi dan setujui status bisnis toko agar dapat memicu pembuatan invoice QRIS dinamis.</p>
+
+          <div *ngIf="merchantError" id="merchant-error" class="alert alert-error">{{ merchantError }}</div>
+          <div *ngIf="merchantSuccess" id="merchant-success" class="alert alert-success">{{ merchantSuccess }}</div>
+
+          <form (ngSubmit)="onVerifyMerchant()" #merchantForm="ngForm" class="action-form">
+            <div class="form-group">
+              <label for="targetMerchantIdVerify">Merchant ID (UUID)</label>
+              <input 
+                type="text" 
+                id="targetMerchantIdVerify" 
+                name="targetMerchantIdVerify" 
+                [(ngModel)]="targetMerchantIdVerify" 
+                placeholder="Masukkan UUID Merchant" 
+                required>
+            </div>
+            <button 
+              type="submit" 
+              id="btn-verify-merchant" 
+              class="btn btn-primary" 
+              [disabled]="merchantLoading || !merchantForm.valid">
+              <span>{{ merchantLoading ? 'Memproses...' : 'Verifikasi Toko' }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 3. Suspend User Card -->
+        <div class="glass-panel action-card border-danger">
+          <h3>🚫 Pembekuan Akun (Suspend)</h3>
+          <p class="card-desc">Bekukan status akun pengguna menjadi SUSPENDED. Pengguna akan didepak paksa dari sistem setelah 15 menit token habis.</p>
+
+          <div *ngIf="suspendError" id="suspend-error" class="alert alert-error">{{ suspendError }}</div>
+          <div *ngIf="suspendSuccess" id="suspend-success" class="alert alert-success">{{ suspendSuccess }}</div>
+
+          <form (ngSubmit)="onSuspendUser()" #suspendForm="ngForm" class="action-form">
+            <div class="form-group">
+              <label for="targetUserIdSuspend">User ID (UUID)</label>
+              <input 
+                type="text" 
+                id="targetUserIdSuspend" 
+                name="targetUserIdSuspend" 
+                [(ngModel)]="targetUserIdSuspend" 
+                placeholder="Masukkan UUID User" 
+                required>
+            </div>
+            <button 
+              type="submit" 
+              id="btn-suspend-user" 
+              class="btn btn-danger" 
+              [disabled]="suspendLoading || !suspendForm.valid">
+              <span>{{ suspendLoading ? 'Memproses...' : 'Bekukan Akun (SUSPEND)' }}</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Section: Admin Audit Logs -->
+    <aside class="dashboard-side">
+      <div class="glass-panel info-card">
+        <h3>📝 Riwayat Tindakan Admin</h3>
+        <p class="card-desc">Daftar operasi yang telah dijalankan di sesi ini.</p>
+        
+        <div class="logs-list" *ngIf="auditLogs.length > 0; else noAudit">
+          <div class="log-item animate-fade-in" *ngFor="let log of auditLogs">
+            <div class="log-info">
+              <p class="log-note"><span class="badge badge-suspended font-display">{{ log.action }}</span></p>
+              <p class="log-target">{{ log.target }}</p>
+              <p class="log-time">{{ log.time | date:'mediumTime' }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <ng-template #noAudit>
+          <p class="empty-logs text-muted">Belum ada aktivitas administrasi tercatat.</p>
+        </ng-template>
+      </div>
+    </aside>
+  </main>
+</div>

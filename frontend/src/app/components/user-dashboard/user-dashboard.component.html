@@ -1,0 +1,181 @@
+<div class="dashboard-container animate-fade-in">
+  <!-- Topbar Header -->
+  <header class="dashboard-header glass-panel">
+    <div class="header-logo">
+      <span class="logo-eye">👁️</span>
+      <h2>E.O.P Portal</h2>
+      <span class="badge badge-active font-display">{{ userRole }}</span>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/support" id="link-support" class="btn btn-secondary">Hubungi Support / AI</a>
+      <button (click)="onLogout()" id="btn-logout" class="btn btn-danger">Keluar</button>
+    </div>
+  </header>
+
+  <!-- KYC Verification Warning Banner -->
+  <div *ngIf="userStatus === 'PENDING'" id="kyc-warning-banner" class="alert alert-error kyc-banner">
+    <h3>⚠️ Akun Anda Belum Aktif (PENDING KYC)</h3>
+    <p>Fitur keuangan dinonaktifkan sementara. Silakan tunggu sampai Admin memverifikasi identitas Anda untuk mengaktifkan akun (ACTIVE).</p>
+  </div>
+
+  <main class="dashboard-content">
+    <!-- Left Section: Wallet Details & Actions -->
+    <section class="dashboard-main">
+      <!-- Wallet Balance Panel -->
+      <div class="glass-panel wallet-card">
+        <div class="wallet-header">
+          <p class="label">Total Saldo Dompet</p>
+          <span class="wallet-id">Wallet ID: {{ wallet?.id || 'Memuat...' }}</span>
+        </div>
+        <h1 class="balance-display" id="balance-val">
+          Rp{{ wallet ? wallet.balance.toLocaleString() : '0.00' }}
+        </h1>
+        <div class="wallet-footer">
+          <p>Tipe Dompet: <strong class="text-glow">{{ wallet?.ownerType || 'USER' }}</strong></p>
+          <p>Status: <span [class]="'badge badge-' + userStatus.toLowerCase()">{{ userStatus }}</span></p>
+        </div>
+      </div>
+
+      <!-- Financial Transaction Tabs (only enabled when ACTIVE) -->
+      <div class="transactions-grid" *ngIf="userStatus === 'ACTIVE'">
+        <!-- 1. P2P Transfer Card -->
+        <div class="glass-panel action-card">
+          <h3>💸 Transfer Saldo P2P</h3>
+          <p class="card-desc">Kirim dana instan ke sesama pengguna E.O.P.</p>
+          
+          <div *ngIf="transferError" id="transfer-error" class="alert alert-error">{{ transferError }}</div>
+          <div *ngIf="transferSuccess" id="transfer-success" class="alert alert-success">{{ transferSuccess }}</div>
+
+          <form (ngSubmit)="onTransfer()" #transferForm="ngForm" class="action-form">
+            <div class="form-group">
+              <label for="recipient">Penerima (Username / Email)</label>
+              <input 
+                type="text" 
+                id="recipient" 
+                name="recipient" 
+                [(ngModel)]="transferData.recipient" 
+                placeholder="Username atau email penerima" 
+                required>
+            </div>
+            <div class="form-group">
+              <label for="amount">Jumlah Transfer (Rp)</label>
+              <input 
+                type="number" 
+                id="amount" 
+                name="amount" 
+                [(ngModel)]="transferData.amount" 
+                placeholder="Nominal transfer" 
+                required 
+                min="1000">
+            </div>
+            <div class="form-group">
+              <label for="note">Catatan (Opsional)</label>
+              <input 
+                type="text" 
+                id="note" 
+                name="note" 
+                [(ngModel)]="transferData.note" 
+                placeholder="Catatan transfer">
+            </div>
+            <button 
+              type="submit" 
+              id="btn-transfer" 
+              class="btn btn-primary" 
+              [disabled]="transferLoading || !transferForm.valid">
+              <span>{{ transferLoading ? 'Memproses...' : 'Kirim Uang' }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 2. QRIS Scan and Pay Card -->
+        <div class="glass-panel action-card">
+          <h3>📷 Pembayaran QRIS</h3>
+          <p class="card-desc">Selesaikan tagihan belanja via Invoice ID QRIS Dinamis.</p>
+
+          <div *ngIf="qrisError" id="qris-error" class="alert alert-error">{{ qrisError }}</div>
+          <div *ngIf="qrisSuccess" id="qris-success" class="alert alert-success">{{ qrisSuccess }}</div>
+
+          <!-- Phase 1: Enter Invoice ID -->
+          <div *ngIf="!qrisTargetTx" class="action-form">
+            <div class="form-group">
+              <label for="qrisInvoiceId">Invoice ID QRIS</label>
+              <input 
+                type="text" 
+                id="qrisInvoiceId" 
+                name="qrisInvoiceId" 
+                [(ngModel)]="qrisInvoiceId" 
+                placeholder="Masukkan ID invoice merchant">
+            </div>
+            <button 
+              (click)="onCheckQris()" 
+              id="btn-check-qris" 
+              class="btn btn-secondary" 
+              [disabled]="qrisLoading || !qrisInvoiceId">
+              <span>Periksa Invoice</span>
+            </button>
+          </div>
+
+          <!-- Phase 2: Confirm Payment details -->
+          <div *ngIf="qrisTargetTx" class="qris-confirm-panel animate-fade-in">
+            <div class="qris-invoice-details">
+              <p><strong>Merchant:</strong> {{ qrisTargetTx.recipient?.merchantName || 'Toko Bisnis' }}</p>
+              <p><strong>Nominal:</strong> <span class="text-glow font-display">Rp{{ qrisTargetTx.amount.toLocaleString() }}</span></p>
+              <p><strong>Catatan:</strong> {{ qrisTargetTx.note || '-' }}</p>
+              <p><strong>Invoice ID:</strong> <code>{{ qrisTargetTx.invoiceId }}</code></p>
+            </div>
+            
+            <div class="qris-actions">
+              <button 
+                (click)="onPayQris()" 
+                id="btn-pay-qris" 
+                class="btn btn-primary" 
+                [disabled]="qrisLoading">
+                <span>{{ qrisLoading ? 'Membayar...' : 'Bayar Sekarang' }}</span>
+              </button>
+              <button (click)="cancelQrisPay()" class="btn btn-secondary">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Section: Side Utilities -->
+    <aside class="dashboard-side" *ngIf="userStatus === 'ACTIVE'">
+      <!-- 3. Voucher Redeem Card -->
+      <div class="glass-panel action-card">
+        <h3>🎟️ Klaim Voucher Saldo</h3>
+        <p class="card-desc">Redeem kode voucher Anda untuk mendapatkan saldo tambahan.</p>
+
+        <div *ngIf="voucherError" id="voucher-error" class="alert alert-error">{{ voucherError }}</div>
+        <div *ngIf="voucherSuccess" id="voucher-success" class="alert alert-success">{{ voucherSuccess }}</div>
+
+        <form (ngSubmit)="onRedeemVoucher()" #voucherForm="ngForm" class="action-form">
+          <div class="form-group">
+            <label for="voucherCode">Kode Voucher</label>
+            <input 
+              type="text" 
+              id="voucherCode" 
+              name="voucherCode" 
+              [(ngModel)]="voucherCode" 
+              placeholder="Contoh: FREE100K" 
+              required>
+          </div>
+          <button 
+            type="submit" 
+            id="btn-redeem-voucher" 
+            class="btn btn-primary" 
+            [disabled]="voucherLoading || !voucherForm.valid">
+            <span>{{ voucherLoading ? 'Mengecek...' : 'Klaim Saldo' }}</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Info Panel -->
+      <div class="glass-panel info-card">
+        <h3>💡 Informasi Sistem</h3>
+        <p class="info-text">E.O.P menerapkan Stateful Transaction Logs di MongoDB untuk menjamin transparansi pencatatan, dan database PostgreSQL terisolasi untuk data sensitif dompet Anda.</p>
+        <p class="info-text">Setiap pengaduan keluhan Anda akan dianalisis secara real-time oleh model AI Google Gemini.</p>
+      </div>
+    </aside>
+  </main>
+</div>
