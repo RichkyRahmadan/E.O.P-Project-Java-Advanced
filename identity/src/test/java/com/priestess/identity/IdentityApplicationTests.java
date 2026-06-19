@@ -9,5 +9,4 @@ class IdentityApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
-}
+}

@@ -22,7 +22,7 @@
     <!-- Left Section: QRIS Invoice Management -->
     <section class="dashboard-main">
       <!-- Wallet Balance Panel -->
-      <div class="glass-panel wallet-card merchant-wallet">
+      <div class="glass-panel wallet-card merchant-wallet stitch-card">
         <div class="wallet-header">
           <p class="label">Pendapatan Toko / Saldo</p>
           <span class="wallet-id">Merchant Wallet ID: {{ wallet?.id || 'Memuat...' }}</span>
@@ -39,7 +39,7 @@
       <!-- Core QRIS Tool -->
       <div class="qris-workspace" *ngIf="userStatus === 'ACTIVE'">
         <!-- Phase 1: QRIS Generator Form -->
-        <div *ngIf="!generatedInvoice" class="glass-panel action-card">
+        <div *ngIf="!generatedInvoice" class="glass-panel action-card stitch-card">
           <h3>⚡ Generate Invoice QRIS Dinamis</h3>
           <p class="card-desc">Buat QRIS sekali pakai dengan nominal tertentu. Pelanggan Anda dapat men-scan kode ini untuk membayar.</p>
           
@@ -77,7 +77,7 @@
         </div>
 
         <!-- Phase 2: Live QRIS Invoice Screen (With Polling Status) -->
-        <div *ngIf="generatedInvoice" class="glass-panel qris-presentation-card animate-fade-in">
+        <div *ngIf="generatedInvoice" class="glass-panel qris-presentation-card stitch-card animate-fade-in">
           <div class="presentation-header">
             <h3>QRIS Dinamis E.O.P</h3>
             <button (click)="clearInvoiceScreen()" class="btn btn-secondary btn-sm">Tutup Layar</button>
@@ -136,7 +136,7 @@
 
     <!-- Right Section: Transaction Logs -->
     <aside class="dashboard-side">
-      <div class="glass-panel info-card">
+      <div class="glass-panel info-card stitch-card">
         <h3>📊 Mutasi Kasir Terakhir</h3>
         <p class="card-desc">Daftar transaksi QRIS sukses pada sesi ini.</p>
         

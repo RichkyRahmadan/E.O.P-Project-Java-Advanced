@@ -1,6 +1,5 @@
 package com.priestess.oracle.service.impl;
 
-import com.priestess.oracle.dto.SubmitComplaintRequest;
 import com.priestess.oracle.entity.ComplaintDocument;
 import com.priestess.oracle.repository.ComplaintRepository;
 import com.priestess.oracle.service.ComplaintService;
@@ -35,30 +34,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final GeminiAiService geminiAiService;
 
-    @Override
-    public ComplaintDocument submitComplaint(String userId, SubmitComplaintRequest request) {
-        log.info("[ComplaintService] Menerima keluhan baru dari userId={}", userId);
 
-        // Buat dan simpan dokumen awal dengan status OPEN
-        ComplaintDocument complaint = ComplaintDocument.builder()
-                .complaintId(UUID.randomUUID().toString())
-                .userId(userId)
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .invoiceId(request.getInvoiceId())
-                .rawMessage(request.getMessage())
-                .status("OPEN")
-                .build();
-
-        ComplaintDocument saved = complaintRepository.save(complaint);
-        log.info("[ComplaintService] Keluhan disimpan: complaintId={}", saved.getComplaintId());
-
-        // Panggil analisis AI secara asinkron (non-blocking)
-        // GeminiAiServiceImpl.analyzeComplaint() dianotasi @Async
-        geminiAiService.analyzeComplaint(saved);
-
-        return saved;
-    }
 
     @Override
     public ComplaintDocument getComplaintById(String complaintId) {

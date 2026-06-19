@@ -1,15 +1,19 @@
 package com.priestess.identity.controller;
 
+import com.priestess.identity.dto.PendingMerchantResponse;
+import com.priestess.identity.dto.PendingUserResponse;
 import com.priestess.identity.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -86,5 +90,25 @@ public class AdminController {
         log.info("[AdminController] PATCH /api/admin/merchants/{}/verify", merchantId);
         adminService.verifyMerchant(merchantId);
         return ResponseEntity.ok("Merchant berhasil diverifikasi.");
+    }
+
+    /**
+     * Get list of pending users (KYC).
+     */
+    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @GetMapping("/users/pending")
+    public ResponseEntity<List<PendingUserResponse>> getPendingUsers() {
+        log.info("[AdminController] GET /api/admin/users/pending");
+        return ResponseEntity.ok(adminService.getPendingUsers());
+    }
+
+    /**
+     * Get list of pending merchants (unverified).
+     */
+    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @GetMapping("/merchants/pending")
+    public ResponseEntity<List<PendingMerchantResponse>> getPendingMerchants() {
+        log.info("[AdminController] GET /api/admin/merchants/pending");
+        return ResponseEntity.ok(adminService.getPendingMerchants());
     }
 }

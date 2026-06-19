@@ -1,5 +1,9 @@
 package com.priestess.identity.service;
 
+import com.priestess.identity.dto.PendingMerchantResponse;
+import com.priestess.identity.dto.PendingUserResponse;
+
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,4 +19,10 @@ public interface AdminService {
 
     /** Set is_verified = true pada entitas Merchant. */
     void verifyMerchant(UUID merchantId);
+
+    /** Mengambil daftar user ber-role USER yang masih berstatus PENDING. */
+    List<PendingUserResponse> getPendingUsers();
+
+    /** Mengambil daftar merchant yang belum diverifikasi (is_verified = false). */
+    List<PendingMerchantResponse> getPendingMerchants();
 }

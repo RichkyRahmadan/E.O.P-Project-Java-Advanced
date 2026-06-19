@@ -1,53 +1,71 @@
-<div class="login-wrapper animate-fade-in">
-  <div class="glass-panel login-card">
-    <div class="brand-header">
-      <div class="priestess-eye">👁️</div>
-      <h1>E.O.P</h1>
-      <p class="subtitle">Eyes Of Priestess — Digital Wallet</p>
-    </div>
+<div class="auth-page animate-fade-up">
 
-    <div *ngIf="errorMessage" id="login-error-alert" class="alert alert-error">
-      {{ errorMessage }}
-    </div>
-
-    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login-form">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          name="username" 
-          [(ngModel)]="credentials.username" 
-          placeholder="Masukkan username Anda" 
-          required 
-          #usernameInput="ngModel">
+  <!-- Left: Branding Panel -->
+  <div class="auth-brand-panel">
+    <div class="auth-brand-content">
+      <div class="auth-logo">
+        <span class="logo-icon">👁</span>
+        <span class="logo-text">E.O.P</span>
       </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          [(ngModel)]="credentials.password" 
-          placeholder="Masukkan password Anda" 
-          required 
-          #passwordInput="ngModel">
-      </div>
-
-      <button 
-        type="submit" 
-        id="btn-login-submit" 
-        class="btn btn-primary btn-block" 
-        [disabled]="loading || !loginForm.valid">
-        <span *ngIf="!loading">Masuk</span>
-        <span *ngIf="loading">Memuat...</span>
-      </button>
-    </form>
-
-    <div class="footer-links">
-      <p>Belum punya akun? <a routerLink="/register" id="link-register">Daftar User</a></p>
-      <p>Ingin jualan? <a routerLink="/register-merchant" id="link-register-merchant" class="merchant-link">Daftar Merchant</a></p>
+      <h1 class="auth-headline">Dompet digital<br>yang cerdas.</h1>
+      <p class="auth-sub">Transfer instan, pembayaran QRIS, dan analisis keluhan berbasis AI — semua dalam satu platform.</p>
     </div>
   </div>
+
+  <!-- Right: Form Panel -->
+  <div class="auth-form-panel">
+    <div class="auth-form-card">
+
+      <div class="auth-form-header">
+        <h2>Masuk ke akun</h2>
+        <p>Selamat datang kembali di E.O.P</p>
+      </div>
+
+      <div *ngIf="errorMessage" id="login-error-alert" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="auth-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            [(ngModel)]="credentials.username"
+            placeholder="Masukkan username"
+            required
+            #usernameInput="ngModel">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="credentials.password"
+            placeholder="Masukkan password"
+            required
+            #passwordInput="ngModel">
+        </div>
+
+        <button
+          type="submit"
+          id="btn-login-submit"
+          class="btn btn-primary btn-block"
+          [disabled]="loading || !loginForm.valid">
+          <span *ngIf="!loading">Masuk</span>
+          <span *ngIf="loading">Memuat...</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Belum punya akun? <a routerLink="/register" id="link-register">Daftar User</a></p>
+        <p>Ingin berjualan? <a routerLink="/register-merchant" id="link-register-merchant">Daftar Merchant</a></p>
+      </div>
+
+    </div>
+  </div>
+
 </div>

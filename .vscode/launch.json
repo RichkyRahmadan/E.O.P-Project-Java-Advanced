@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CoreApplication<core>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.priestess.core.CoreApplication",
+            "projectName": "core",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-GatewayApplication<gateway>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.priestess.gateway.GatewayApplication",
+            "projectName": "gateway",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-IdentityApplication<identity>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.priestess.identity.IdentityApplication",
+            "projectName": "identity",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-OracleApplication<oracle>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.priestess.oracle.OracleApplication",
+            "projectName": "oracle",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

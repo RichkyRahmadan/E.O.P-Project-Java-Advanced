@@ -1,12 +1,15 @@
 package com.priestess.gateway.filter;
 
+import com.priestess.gateway.filter.SuspendedUserCache;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -56,14 +59,20 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
     // KONSTANTA
     // =========================================================================
 
-    private static final String AUTHORIZATION_HEADER  = "Authorization";
-    private static final String BEARER_PREFIX         = "Bearer ";
-    private static final String HEADER_USER_ID        = "X-User-Id";
-    private static final String HEADER_USER_ROLE      = "X-User-Role";
+    private static final String AUTHORIZATION_HEADER    = "Authorization";
+    private static final String BEARER_PREFIX           = "Bearer ";
+    private static final String HEADER_USER_ID          = "X-User-Id";
+    private static final String HEADER_USER_NAME        = "X-User-Name";
+    private static final String HEADER_USER_EMAIL       = "X-User-Email";
+    private static final String HEADER_USER_ROLE        = "X-User-Role";
+    private static final String HEADER_USER_STATUS      = "X-User-Status";
     private static final String HEADER_USER_PERMISSIONS = "X-User-Permissions";
 
     /** Nama klaim JWT — harus identik dengan yang digunakan di JWTUtil Identity Service. */
+    private static final String CLAIM_USERNAME    = "username";
+    private static final String CLAIM_EMAIL       = "email";
     private static final String CLAIM_ROLE        = "role";
+    private static final String CLAIM_STATUS      = "status";
     private static final String CLAIM_PERMISSIONS = "permissions";
 
     // =========================================================================
@@ -77,6 +86,20 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
      */
     @Value("${jwt.secret}")
     private String secretKeyString;
+
+    /**
+     * Cache in-memory berisi userId yang sedang SUSPENDED.
+     * Diperbarui secara real-time oleh {@code SuspendedUserConsumer}
+     * saat event {@code user.suspended} diterima dari RabbitMQ.
+     *
+     * <p>Sesuai rules-eop-priestess.md SECTION 6: efek penendangan instan
+     * tanpa menunggu JWT kedaluwarsa 15 menit.
+     */
+    @Autowired
+    private SuspendedUserCache suspendedUserCache;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     // =========================================================================
     // FILTER LOGIC
@@ -112,12 +135,12 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         // =====================================================================
-        // LANGKAH 2 & 3 — Validasi Signature JWT dan Ekstrak Klaim
+        // LANGKAH 2 — Validasi Signature JWT secara Kriptografis
         // =====================================================================
         Claims claims;
         try {
             claims = parseAndValidateToken(token);
-            log.debug("[GatewayJwtFilter] Token valid untuk sub={}", claims.getSubject());
+            log.debug("[GatewayJwtFilter] Token secara kriptografis valid untuk sub={}", claims.getSubject());
 
         } catch (ExpiredJwtException e) {
             log.warn("[GatewayJwtFilter] DITOLAK 401 — Token kadaluarsa pada path: {}", requestPath);
@@ -129,24 +152,77 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
             return buildUnauthorizedResponse("Akses ditolak: Token tidak valid atau telah dimanipulasi.");
         }
 
-        // =====================================================================
-        // LANGKAH 4 — Header Mutation: Suntikkan klaim ke request internal
-        // =====================================================================
-        String userId      = claims.getSubject();
-        String role        = claims.get(CLAIM_ROLE, String.class);
-        String permissions = claims.getOrDefault(CLAIM_PERMISSIONS, "").toString();
+        String userId = claims.getSubject();
 
-        // Mutasi request: tambahkan header baru tanpa mengubah header asli dari klien
+        // =====================================================================
+        // LANGKAH 3 — Validasi Session stateful di Redis
+        // =====================================================================
+        String sessionKey = "session:" + token;
+        String sessionRaw = null;
+        try {
+            sessionRaw = redisTemplate.opsForValue().get(sessionKey);
+        } catch (Exception e) {
+            log.error("[GatewayJwtFilter] Gagal menghubungi Redis untuk validasi session: {}", e.getMessage());
+            return buildUnauthorizedResponse("Akses ditolak: Gagal melakukan validasi sesi.");
+        }
+
+        if (sessionRaw == null) {
+            log.warn("[GatewayJwtFilter] DITOLAK 401 — Session tidak ditemukan atau expired di Redis. Path: {}", requestPath);
+            return buildUnauthorizedResponse("Akses ditolak: Sesi Anda telah habis atau tidak aktif. Silakan login kembali.");
+        }
+
+        // =====================================================================
+        // LANGKAH 4 — Parse Delimited Session dan Ekstrak Informasi
+        // =====================================================================
+        String username;
+        String email;
+        String role;
+        String status;
+        String permissions;
+
+        try {
+            String[] parts = sessionRaw.split(":::", -1);
+            if (parts.length >= 6) {
+                username = parts[1];
+                email = parts[2];
+                role = parts[3];
+                status = parts[4];
+                permissions = parts[5];
+            } else {
+                log.warn("[GatewayJwtFilter] Format sesi di Redis tidak valid: {}", sessionRaw);
+                return buildUnauthorizedResponse("Akses ditolak: Struktur sesi tidak valid.");
+            }
+        } catch (Exception e) {
+            log.error("[GatewayJwtFilter] Gagal memparsing data sesi dari Redis: {}", e.getMessage());
+            return buildUnauthorizedResponse("Akses ditolak: Struktur sesi tidak valid.");
+        }
+
+        // =====================================================================
+        // LANGKAH 4.5 — Periksa Suspended User Cache & Status (SECTION 6)
+        // =====================================================================
+        if (suspendedUserCache.isSuspended(userId) || "SUSPENDED".equalsIgnoreCase(status)) {
+            log.warn("[GatewayJwtFilter] DITOLAK 403 — User {} dalam status SUSPENDED. Path: {}",
+                    userId, requestPath);
+            return buildForbiddenResponse("Akses ditolak: Akun Anda telah dibekukan oleh Administrator.");
+        }
+
+        // =====================================================================
+        // LANGKAH 5 — Header Mutation: Suntikkan klaim ke request internal
+        // =====================================================================
         ServerRequest mutatedRequest = ServerRequest.from(request)
                 .header(HEADER_USER_ID,          userId)
-                .header(HEADER_USER_ROLE,         role)
-                .header(HEADER_USER_PERMISSIONS,  permissions)
+                .header(HEADER_USER_NAME,        username != null ? username : "")
+                .header(HEADER_USER_EMAIL,       email != null ? email : "")
+                .header(HEADER_USER_ROLE,         role != null ? role : "")
+                .header(HEADER_USER_STATUS,       status != null ? status : "")
+                .header(HEADER_USER_PERMISSIONS,  permissions != null ? permissions : "")
                 .build();
 
-        log.debug("[GatewayJwtFilter] Header disuntikkan — X-User-Id={}, X-User-Role={}", userId, role);
+        log.debug("[GatewayJwtFilter] Header disuntikkan — X-User-Id={}, X-User-Name={}, X-User-Email={}, X-User-Role={}, X-User-Status={}",
+                userId, username, email, role, status);
 
         // =====================================================================
-        // LANGKAH 5 — Teruskan request yang telah dimutasi ke service tujuan
+        // LANGKAH 6 — Teruskan request yang telah dimutasi ke service tujuan
         // =====================================================================
         return next.handle(mutatedRequest);
     }
@@ -172,11 +248,7 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
     }
 
     /**
-     * Membangun respons HTTP 401 Unauthorized langsung dari Gateway
-     * tanpa meneruskan request ke service tujuan.
-     *
-     * <p>Response body berisi JSON sederhana agar Angular Interceptor dapat
-     * membaca dan memproses pesan error secara konsisten.
+     * Membangun respons HTTP 401 Unauthorized langsung dari Gateway.
      *
      * @param message pesan error yang aman ditampilkan ke klien
      * @return {@link ServerResponse} dengan status 401 dan body JSON
@@ -190,6 +262,28 @@ public class GatewayJwtFilter implements HandlerFilterFunction<ServerResponse, S
 
         return ServerResponse
                 .status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(jsonBody);
+    }
+
+    /**
+     * Membangun respons HTTP 403 Forbidden untuk user yang sudah SUSPENDED.
+     *
+     * <p>Berbeda dari 401 (tidak ada token), 403 menandakan bahwa token
+     * valid namun akun telah dibekukan oleh Administrator.
+     *
+     * @param message pesan error yang informatif untuk user
+     * @return {@link ServerResponse} dengan status 403 dan body JSON
+     */
+    private ServerResponse buildForbiddenResponse(String message) {
+        String jsonBody = String.format(
+                "{\"status\":403,\"message\":\"%s\",\"timestamp\":\"%s\"}",
+                message,
+                java.time.LocalDateTime.now()
+        );
+
+        return ServerResponse
+                .status(HttpStatus.FORBIDDEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonBody);
     }

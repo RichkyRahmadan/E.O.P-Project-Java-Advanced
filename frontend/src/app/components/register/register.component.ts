@@ -22,6 +22,7 @@ export class RegisterComponent {
   };
 
   errorMessage: string | null = null;
+  successMessage: string | null = null;
   loading = false;
 
   onSubmit(): void {
@@ -37,13 +38,15 @@ export class RegisterComponent {
 
     this.loading = true;
     this.errorMessage = null;
+    this.successMessage = null;
 
     this.authService.registerUser(this.userData).subscribe({
       next: (res) => {
         this.loading = false;
-        // Upon successful registration, the API automatically logs in and returns tokens.
-        // Direct users to dashboard. (It will be PENDING status until verified by Admin)
-        this.router.navigate(['/dashboard/user']);
+        this.successMessage = res.message || 'Registrasi berhasil. Silakan hubungi admin untuk melakukan verifikasi akun.';
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 5000);
       },
       error: (err) => {
         console.error(err);

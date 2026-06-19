@@ -22,7 +22,13 @@ export class AdminDashboardComponent implements OnInit {
   username = '';
   userRole = '';
 
-  // Direct actions input values
+  // Pending Lists
+  pendingUsers: any[] = [];
+  pendingMerchants: any[] = [];
+  usersLoading = false;
+  merchantsLoading = false;
+
+  // Direct actions input values (optional fallbacks)
   targetUserIdKyc = '';
   targetUserIdSuspend = '';
   targetMerchantIdVerify = '';
@@ -46,6 +52,84 @@ export class AdminDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.userId = this.authService.getUserId() || '';
     this.userRole = this.authService.getUserRole() || '';
+    this.loadPendingUsers();
+    this.loadPendingMerchants();
+  }
+
+  loadPendingUsers(): void {
+    this.usersLoading = true;
+    this.http.get<any[]>('/api/admin/users/pending').subscribe({
+      next: (data) => {
+        this.pendingUsers = data;
+        this.usersLoading = false;
+      },
+      error: (err) => {
+        console.error('Gagal mengambil daftar user pending:', err);
+        this.usersLoading = false;
+      }
+    });
+  }
+
+  loadPendingMerchants(): void {
+    this.merchantsLoading = true;
+    this.http.get<any[]>('/api/admin/merchants/pending').subscribe({
+      next: (data) => {
+        this.pendingMerchants = data;
+        this.merchantsLoading = false;
+      },
+      error: (err) => {
+        console.error('Gagal mengambil daftar merchant pending:', err);
+        this.merchantsLoading = false;
+      }
+    });
+  }
+
+  verifyKycDirect(userId: string): void {
+    this.kycLoading = true;
+    this.kycError = null;
+    this.kycSuccess = null;
+
+    this.http.patch(`/api/admin/users/${userId}/kyc`, null, { responseType: 'text' }).subscribe({
+      next: (res) => {
+        this.kycSuccess = res;
+        this.auditLogs.unshift({
+          action: 'VERIFY KYC',
+          target: `User ID: ${userId}`,
+          time: new Date()
+        });
+        this.kycLoading = false;
+        this.loadPendingUsers();
+      },
+      error: (err) => {
+        console.error(err);
+        this.kycError = err.error || 'Gagal memverifikasi KYC.';
+        this.kycLoading = false;
+      }
+    });
+  }
+
+  verifyMerchantDirect(merchantId: string): void {
+    this.merchantLoading = true;
+    this.merchantError = null;
+    this.merchantSuccess = null;
+
+    this.http.patch(`/api/admin/merchants/${merchantId}/verify`, null, { responseType: 'text' }).subscribe({
+      next: (res) => {
+        this.merchantSuccess = res;
+        this.auditLogs.unshift({
+          action: 'VERIFY MERCHANT',
+          target: `Merchant ID: ${merchantId}`,
+          time: new Date()
+        });
+        this.merchantLoading = false;
+        this.loadPendingMerchants();
+      },
+      error: (err) => {
+        console.error(err);
+        this.merchantError = err.error || 'Gagal memverifikasi merchant.';
+        this.merchantLoading = false;
+      }
+    });
   }
 
   onVerifyKyc(): void {
@@ -53,28 +137,17 @@ export class AdminDashboardComponent implements OnInit {
       this.kycError = 'User ID tidak boleh kosong.';
       return;
     }
+    this.verifyKycDirect(this.targetUserIdKyc.trim());
+    this.targetUserIdKyc = '';
+  }
 
-    this.kycLoading = true;
-    this.kycError = null;
-    this.kycSuccess = null;
-
-    this.http.patch(`/api/admin/users/${this.targetUserIdKyc.trim()}/kyc`, null, { responseType: 'text' }).subscribe({
-      next: (res) => {
-        this.kycSuccess = res;
-        this.auditLogs.unshift({
-          action: 'VERIFY KYC',
-          target: `User ID: ${this.targetUserIdKyc}`,
-          time: new Date()
-        });
-        this.targetUserIdKyc = '';
-        this.kycLoading = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.kycError = err.error || 'Gagal memverifikasi KYC. Pastikan UUID valid dan Anda memiliki hak akses.';
-        this.kycLoading = false;
-      }
-    });
+  onVerifyMerchant(): void {
+    if (!this.targetMerchantIdVerify.trim()) {
+      this.merchantError = 'Merchant ID tidak boleh kosong.';
+      return;
+    }
+    this.verifyMerchantDirect(this.targetMerchantIdVerify.trim());
+    this.targetMerchantIdVerify = '';
   }
 
   onSuspendUser(): void {
@@ -97,40 +170,12 @@ export class AdminDashboardComponent implements OnInit {
         });
         this.targetUserIdSuspend = '';
         this.suspendLoading = false;
+        this.loadPendingUsers(); // Refresh in case they were pending
       },
       error: (err) => {
         console.error(err);
         this.suspendError = err.error || 'Gagal membekukan akun. Pastikan UUID valid dan Anda memiliki hak akses.';
         this.suspendLoading = false;
-      }
-    });
-  }
-
-  onVerifyMerchant(): void {
-    if (!this.targetMerchantIdVerify.trim()) {
-      this.merchantError = 'Merchant ID tidak boleh kosong.';
-      return;
-    }
-
-    this.merchantLoading = true;
-    this.merchantError = null;
-    this.merchantSuccess = null;
-
-    this.http.patch(`/api/admin/merchants/${this.targetMerchantIdVerify.trim()}/verify`, null, { responseType: 'text' }).subscribe({
-      next: (res) => {
-        this.merchantSuccess = res;
-        this.auditLogs.unshift({
-          action: 'VERIFY MERCHANT',
-          target: `Merchant ID: ${this.targetMerchantIdVerify}`,
-          time: new Date()
-        });
-        this.targetMerchantIdVerify = '';
-        this.merchantLoading = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.merchantError = err.error || 'Gagal memverifikasi merchant. Pastikan UUID valid dan Anda memiliki hak akses.';
-        this.merchantLoading = false;
       }
     });
   }

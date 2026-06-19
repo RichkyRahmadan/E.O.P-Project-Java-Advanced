@@ -7,6 +7,12 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface RegisterResponse {
+  message: string;
+  username: string;
+  status: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,16 +28,12 @@ export class AuthService {
     );
   }
 
-  registerUser(userData: any): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/auth/register', userData).pipe(
-      tap(res => this.saveSession(res))
-    );
+  registerUser(userData: any): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>('/api/auth/register', userData);
   }
 
-  registerMerchant(merchantData: any): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/auth/register/merchant', merchantData).pipe(
-      tap(res => this.saveSession(res))
-    );
+  registerMerchant(merchantData: any): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>('/api/auth/register/merchant', merchantData);
   }
 
   refreshSession(refreshToken: string): Observable<AuthResponse> {
@@ -91,13 +93,20 @@ export class AuthService {
 
   getUserRole(): string | null {
     const decoded = this.getDecodedToken();
-    return decoded ? decoded.role : null;
+    if (!decoded || !decoded.role) return null;
+    // Bersihkan prefix ROLE_ (contoh: ROLE_ADMIN -> ADMIN) agar sesuai dengan UI route
+    return decoded.role.startsWith('ROLE_') ? decoded.role.substring(5) : decoded.role;
   }
 
   getUserPermissions(): string[] {
     const decoded = this.getDecodedToken();
     if (!decoded || !decoded.permissions) return [];
     return decoded.permissions.split(',');
+  }
+
+  getUserStatus(): string | null {
+    const decoded = this.getDecodedToken();
+    return decoded ? decoded.status : null;
   }
 
   hasPermission(permission: string): boolean {

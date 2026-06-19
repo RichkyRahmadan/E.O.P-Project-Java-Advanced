@@ -9,6 +9,7 @@ import com.priestess.core.dto.WalletResponse;
 import com.priestess.core.entity.TransactionDocument;
 import com.priestess.core.entity.VoucherEntity;
 import com.priestess.core.entity.WalletEntity;
+import com.priestess.core.producer.FinanceEventProducer;
 import com.priestess.core.repository.TransactionRepository;
 import com.priestess.core.repository.VoucherRepository;
 import com.priestess.core.repository.WalletRepository;
@@ -25,22 +26,32 @@ import java.util.UUID;
 /**
  * FinanceServiceImpl — Implementasi lengkap seluruh operasi finansial.
  *
- * <p>Menerapkan pola <b>Dual-Write State Machine</b> sesuai SECTION 7 blueprint:
+ * <p>Menerapkan pola <b>Event-Driven Saga Pattern</b> via RabbitMQ sesuai
+ * rules-eop-priestess.md SECTION 5 (Workflow Transaksi Stateful & Event-Driven):
+ *
+ * <h2>Alur Pembayaran QRIS (Saga Choreography)</h2>
  * <ol>
- *   <li>Simpan log {@code PENDING} ke MongoDB.</li>
- *   <li>Mutasi saldo di PostgreSQL dalam {@code @Transactional} dengan
- *       {@code @Version} Optimistic Locking.</li>
- *   <li>Jika sukses → update MongoDB ke {@code SUCCESS}.
- *       Jika gagal → rollback PostgreSQL otomatis + update MongoDB ke {@code FAILED}.</li>
+ *   <li><b>Fase 1 — Inisiasi (method ini):</b> Simpan log {@code PENDING} ke MongoDB.
+ *       Publish event {@code qris.payment.initiated} ke RabbitMQ. Return LANGSUNG
+ *       ke client dengan status {@code PENDING}.</li>
+ *   <li><b>Fase 2 — Pemrosesan Saldo ({@link com.priestess.core.consumer.QrisPaymentConsumer}):</b>
+ *       Consumer mendengarkan event, membuka {@code @Transactional} di PostgreSQL,
+ *       mutasi saldo dengan Optimistic Locking. Publish {@code qris.payment.success}
+ *       atau {@code qris.payment.failed} ke broker.</li>
+ *   <li><b>Fase 3 — Sinkronisasi Log ({@link com.priestess.core.consumer.TransactionLogConsumer}):</b>
+ *       Consumer memperbarui MongoDB dari {@code PENDING} menjadi {@code SUCCESS}
+ *       atau {@code FAILED} (Eventual Consistency).</li>
  * </ol>
  *
- * <h2>Penting: Tidak Ada Self-Invocation</h2>
- * <p>Spring {@code @Transactional} bekerja via <b>AOP Proxy</b>. Jika sebuah
- * method {@code @Transactional} dipanggil dari method lain dalam kelas yang SAMA,
- * panggilan tersebut melewati proxy sehingga transaksi tidak aktif.
- * Oleh karena itu, seluruh logika PostgreSQL digabungkan langsung ke dalam
- * method utama yang sudah {@code @Transactional} — tidak ada pemisahan menjadi
- * method {@code protected} yang kemudian dipanggil secara internal.
+ * <h2>HTTP Polling untuk Status Real-Time</h2>
+ * <p>Angular Frontend melakukan polling ke
+ * {@code GET /api/finance/transactions/status/{invoiceId}} setiap 3-5 detik
+ * untuk memantau kapan status bergeser dari {@code PENDING} (sesuai SECTION 7).
+ *
+ * <h2>Operasi Lain (Transfer, Voucher, Top-Up)</h2>
+ * <p>Masih menggunakan Dual-Write sinkron karena tidak ada cross-service dependency.
+ * Hanya QRIS Payment yang memerlukan Saga Pattern karena melibatkan dua wallet
+ * (buyer dan merchant) yang mungkin berada dalam kondisi race condition tinggi.
  */
 @Slf4j
 @Service
@@ -50,15 +61,35 @@ public class FinanceServiceImpl implements FinanceService {
     private final WalletRepository      walletRepository;
     private final VoucherRepository     voucherRepository;
     private final TransactionRepository transactionRepository;
+    /**
+     * Producer untuk mempublikasikan event QRIS ke RabbitMQ.
+     * Sesuai SECTION 3 blueprint: komunikasi ke broker dilakukan via Producer bean.
+     */
+    private final FinanceEventProducer  financeEventProducer;
 
     // =========================================================================
     // GET MY WALLET
     // =========================================================================
 
     @Override
-    @Transactional(readOnly = true)
-    public WalletResponse getMyWallet(UUID ownerId) {
-        WalletEntity wallet = findWalletByOwner(ownerId);
+    @Transactional
+    public WalletResponse getMyWallet(UUID ownerId, String role) {
+        WalletEntity wallet;
+        try {
+            wallet = findWalletByOwner(ownerId);
+        } catch (IllegalStateException e) {
+            String ownerType = "USER";
+            if (role != null && role.contains("MERCHANT")) {
+                ownerType = "MERCHANT";
+            }
+            log.info("[FinanceService] Wallet tidak ditemukan untuk owner: {}. Inisialisasi lazy wallet tipe {}", ownerId, ownerType);
+            wallet = WalletEntity.builder()
+                    .ownerId(ownerId)
+                    .ownerType(ownerType)
+                    .balance(BigDecimal.ZERO)
+                    .build();
+            wallet = walletRepository.save(wallet);
+        }
         return toWalletResponse(wallet);
     }
 
@@ -176,12 +207,26 @@ public class FinanceServiceImpl implements FinanceService {
     // PAY QRIS
     // =========================================================================
 
+    /**
+     * Memulai alur pembayaran QRIS via Saga Pattern (Fase 1 dari 3).
+     *
+     * <p>Method ini TIDAK lagi memproses mutasi saldo secara sinkron.
+     * Sebaliknya, ia hanya memvalidasi bahwa invoice PENDING dan buyer ada,
+     * lalu mempublikasikan event ke RabbitMQ. Pemrosesan saldo dilanjutkan
+     * secara asinkron oleh {@code QrisPaymentConsumer}.
+     *
+     * <p>Response yang dikembalikan masih berstatus {@code PENDING}. Angular
+     * Frontend harus melakukan HTTP Polling ke endpoint status untuk memantau
+     * perubahan ke {@code SUCCESS} atau {@code FAILED} (sesuai SECTION 7).
+     */
     @Override
     @Transactional
     public TransactionResponse payQris(UUID buyerOwnerId, QrisPayRequest request) {
         String invoiceId = request.getInvoiceId();
-        log.info("[FinanceService] Pembayaran QRIS — invoiceId={}, buyer={}", invoiceId, buyerOwnerId);
+        log.info("[FinanceService] Inisiasi pembayaran QRIS (Saga Fase 1) — invoiceId={}, buyer={}",
+                invoiceId, buyerOwnerId);
 
+        // Validasi invoice ada dan masih PENDING
         TransactionDocument doc = transactionRepository.findByInvoiceId(invoiceId)
                 .orElseThrow(() -> new IllegalStateException("Invoice QRIS tidak ditemukan: " + invoiceId));
 
@@ -190,38 +235,20 @@ public class FinanceServiceImpl implements FinanceService {
                     "Invoice " + invoiceId + " sudah tidak bisa dibayar (status: " + doc.getStatus() + ").");
         }
 
-        try {
-            WalletEntity buyerWallet = findWalletByOwner(buyerOwnerId);
-            UUID merchantWalletId    = UUID.fromString(doc.getRecipient().getWalletId());
-            WalletEntity merchantWallet = walletRepository.findById(merchantWalletId)
-                    .orElseThrow(() -> new IllegalStateException("Wallet merchant tidak ditemukan."));
+        // Validasi buyer wallet ada (early check sebelum publish ke broker)
+        WalletEntity buyerWallet = findWalletByOwner(buyerOwnerId);
 
-            validateSufficientBalance(buyerWallet, doc.getAmount());
+        // FASE 1: Publish event ke RabbitMQ — pemrosesan saldo dilanjutkan oleh Consumer
+        // QrisPaymentConsumer akan mendengarkan event ini dan memproses mutasi saldo
+        financeEventProducer.publishQrisInitiated(
+                invoiceId,
+                buyerOwnerId.toString(),
+                doc.getAmount()
+        );
 
-            buyerWallet.setBalance(buyerWallet.getBalance().subtract(doc.getAmount()));
-            walletRepository.save(buyerWallet);
+        log.info("[FinanceService] Event qris.payment.initiated dipublish — invoiceId={}", invoiceId);
 
-            merchantWallet.setBalance(merchantWallet.getBalance().add(doc.getAmount()));
-            walletRepository.save(merchantWallet);
-
-            doc.setSender(TransactionDocument.PartyInfo.builder()
-                    .userId(buyerOwnerId.toString())
-                    .walletId(buyerWallet.getId().toString())
-                    .build());
-            doc.setStatus("SUCCESS");
-            transactionRepository.save(doc);
-
-            log.info("[FinanceService] QRIS berhasil dibayar — invoiceId={}", invoiceId);
-
-        } catch (Exception e) {
-            doc.setStatus("FAILED");
-            doc.setNote("ERROR: " + e.getMessage());
-            transactionRepository.save(doc);
-
-            log.error("[FinanceService] QRIS gagal — invoiceId={}, alasan={}", invoiceId, e.getMessage());
-            throw new IllegalStateException("Pembayaran QRIS gagal: " + e.getMessage());
-        }
-
+        // Return PENDING — Angular harus polling status untuk menunggu hasil akhir
         return toTransactionResponse(doc);
     }
 

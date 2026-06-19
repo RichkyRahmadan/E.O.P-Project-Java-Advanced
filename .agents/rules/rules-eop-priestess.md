@@ -2,92 +2,93 @@
 trigger: always_on
 ---
 
-# MASTER ARCHITECTURE BLUEPRINT: E.O.P (Eyes Of Priestess)
+# MASTER ARCHITECTURE BLUEPRINT: E.O.P (Eyes Of Priestess) - STATEFUL EVENT-DRIVEN EDITION
 
 ## SECTION 1: METADATA PROYEK & FILOSOFI SISTEM
 * **Nama Sistem:** E.O.P (Eyes Of Priestess)
-* **Karakteristik Sistem:** Sistem inti dompet digital (E-Wallet) berbasis arsitektur Microservices dengan skalabilitas ringan (lightweight), keamanan berbasis token (stateless security), dan persistensi data hibrida (polyglot persistence).
+* **Karakteristik Sistem:** Sistem inti dompet digital (E-Wallet) berbasis arsitektur Stateful Microservices dengan pendekatan Event-Driven Architecture (EDA) menggunakan Message Broker untuk menjamin asynchronicity, high throughput, dan eventual consistency.
 * **Pengembang Utama:** Richky Rahmadan (Solo Developer)
+* **Institusi:** Universitas Nasional Pasim
 * **Program Studi:** Teknik Informatika
-* **Konteks Proyek:** Ujian Akhir Semester (UAS) untuk Pelatihan Java Lanjutan
+* **Konteks Proyek:** Ujian Akhir Semester (UAS)
 
 ---
 
-## SECTION 2: ARCHITECTURAL BOUNDARIES & RESTRICTIONS (BATASAN MUTLAK)
-Untuk menjaga keringanan aplikasi dan menghindari kompleksitas infrastruktur pada lingkungan local development, arsitektur E.O.P DENGAN TEGAS MELARANG penggunaan teknologi berikut:
-1. TIDAK BOLEH menggunakan Message Broker (Kafka, RabbitMQ, ActiveMQ, dsb.).
-2. TIDAK BOLEH menggunakan In-Memory Database / Cache Server (Redis, Memcached, dsb.).
-3. TIDAK BOLEH menggunakan Protokol Sinkronisasi Real-Time Kompleks (WebSockets atau Server-Sent Events / SSE).
-4. TIDAK BOLEH ada Direct Database Access antar-service. Setiap service murni mengelola databasenya sendiri (Database-per-Service).
-
-Mitigasi integritas data, kontrol konkurensi, dan fungsionalitas sistem wajib menggunakan solusi native software di level kode Java (Spring Boot 3.x) dan TypeScript (Angular) yang tertera pada dokumen ini.
+## SECTION 2: ARCHITECTURAL BOUNDARIES & INFRASTRUCTURE
+Sistem E.O.P mengadopsi arsitektur pesan terdistribusi dengan aturan infrastruktur sebagai berikut:
+1. **WAJIB Menggunakan Message Broker:** RabbitMQ digunakan sebagai media komunikasi asinkron utama antar-service (Event-Driven Broker).
+2. **TIDAK BOLEH ada Direct Database Access** antar-service. Setiap service murni mengelola databasenya sendiri (Database-per-Service).
+3. **Komunikasi Sinkron vs Asinkron:** Komunikasi sinkron (HTTP REST) hanya digunakan dari Klien Angular ke Gateway, dan dari Gateway ke Service Entry Point. Komunikasi internal antar-service wajib diarahkan melalui mekanisme *Publish/Subscribe Topic/Queue* via RabbitMQ.
+4. **Decoupling Data Identitas (Identity Propagation):**
+   * Client (Angular) **TIDAK BOLEH** mengirimkan informasi pribadi sensitif seperti `username` dan `email` di dalam request body.
+   * `E.O.P Gateway` wajib memvalidasi JWT secara stateless, mengekstrak data dari klaim token (`userId`, `username`, `email`, `role`, `permissions`), lalu menyuntikkannya sebagai HTTP Header downstream (`X-User-Id`, `X-User-Name`, `X-User-Email`, `X-User-Role`, `X-User-Permissions`).
+   * Downstream services menerima header tersebut secara langsung untuk proses otorisasi dan identifikasi.
 
 ---
 
 ## SECTION 3: STRUKTUR ARSITEKTUR LAYERED & PACKAGE DIRECTORY
 Setiap microservice wajib dipecah ke dalam lapisan paket (package) yang terisolasi secara kaku mengikuti konvensi berikut:
-* `com.priestess.eop.entity` : Kelas entitas database (JPA/Hibernate untuk PostgreSQL atau POJO @Document untuk MongoDB). Menggunakan PascalCase (Contoh: `WalletEntity`).
-* `com.priestess.eop.repository` : Interface yang meng-extend JpaRepository atau MongoRepository (Contoh: `UserRepository`).
-* `com.priestess.eop.dto` : Objek transfer data untuk request body (berakhir dengan 'Req' atau 'Request', contoh: `LoginReq`) dan standarisasi response.
+* `com.priestess.eop.entity` : Kelas entitas database (JPA/Hibernate untuk PostgreSQL atau POJO @Document untuk MongoDB).
+* `com.priestess.eop.repository` : Interface yang meng-extend JpaRepository atau MongoRepository.
+* `com.priestess.eop.dto` : Objek transfer data untuk request body (berakhir dengan 'Req' atau 'Request') dan standarisasi response.
+* `com.priestess.eop.producer` : Kelas beranotasi `@Component` yang bertugas mengirimkan pesan/event ke Message Broker (RabbitMQ).
+* `com.priestess.eop.consumer` : Kelas beranotasi `@Component` / `@RabbitListener` yang bertugas mendengarkan event dari broker dan memicu logika bisnis.
 * `com.priestess.eop.service` : Murni kumpulan INTERFACE kontrak logika bisnis.
-* `com.priestess.eop.service.impl` : Kelas IMPLEMENTASI dari interface service. Nama kelas wajib berakhiran 'ServiceImpl' (Contoh: `AuthServiceImpl`). Semua anotasi `@Service` dan `@Transactional` diletakkan di sini.
-* `com.priestess.eop.controller` : Kelas `@RestController` yang murni menangani HTTP request mapping, validasi input (`@Valid`, `@RequestBody`), dan mengembalikan ResponseEntity. Logika bisnis dilarang ditulis di sini.
-* `com.priestess.eop.utility` : Tempat kelas utilitas penunjang sistem yang bersifat terisolasi seperti `JWTUtil` dan `JWTFilter`.
-* `com.priestess.eop.config` : Tempat seluruh kelas konfigurasi global, `@Configuration`, `SecurityConfig`, dan komponen kustom keamanan seperti `CustomPermissionEvaluator`.
+* `com.priestess.eop.service.impl` : Kelas IMPLEMENTASI dari interface service (Berakhiran 'ServiceImpl'). Semua anotasi `@Service` dan `@Transactional` diletakkan di sini.
+* `com.priestess.eop.controller` : Kelas `@RestController` yang murni menangani HTTP request mapping, validasi input, dan mengembalikan ResponseEntity. Logika bisnis dilarang ditulis di sini.
+* `com.priestess.eop.config` : Tempat seluruh kelas konfigurasi global, `@Configuration`, `SecurityConfig`, dan konfigurasi Broker (RabbitMQ Queue/Exchange Bean).
 
-*Gaya Pengodean:* Wajib menggunakan konstruktor berbasis anotasi `@RequiredArgsConstructor` dari Lombok untuk menginjeksi dependency (Repository/Service lain). Hindari penggunaan `@Autowired` langsung pada field variabel.
-
----
-
-## SECTION 4: TOPOLOGI LAYANAN & DISTRIBUSI PORT
-Sistem terbagi menjadi 1 Gateway sebagai pintu masuk tunggal dan 3 Layanan Internal independen:
-
-1. **E.O.P Gateway (Port 8080):** Menggunakan Spring Cloud Gateway. Bertindak sebagai Single Entry Point, menangani CORS terpusat, dan melakukan validasi Access Token (JWT) secara stateless. Melakukan Header Mutation untuk menyuntikkan `X-User-Id`, `X-User-Role`, dan `X-User-Permissions` sebelum request diteruskan.
-2. **Identity Service (Port 8081):** Mengelola database PostgreSQL (`eop_identity_db`). Menangani autentikasi, pendaftaran, verifikasi KYC oleh Admin, pembekuan akun, dan manajemen hak akses dinamis (RBAC).
-3. **Core Finance Service (Port 8082):** Menggunakan database Polyglot (PostgreSQL `eop_finance_db` & MongoDB `eop_transaction_log`). Menangani sirkulasi uang, pemotongan saldo, transfer P2P, pembuatan invoice QRIS dinamis, eksekusi pembayaran QRIS, serta klaim kode voucher.
-4. **Support & Oracle Service (Port 8083):** Menggunakan database MongoDB (`eop_support_db`). Menangani pengaduan pengguna secara asinkron (`@Async`), integrasi Google Gemini AI API, dan pengiriman email via Java Mail Sender (JSM).
+*Gaya Pengodean:* Wajib menggunakan konstruktor berbasis anotasi `@RequiredArgsConstructor` dari Lombok untuk menginjeksi dependency. Hindari penggunaan `@Autowired` langsung pada field variabel.
 
 ---
 
-## SECTION 5: SPESIFIKASI DATA DEFINITION (DDL DATABASE)
+## SECTION 4: TOPOLOGI LAYANAN & ESTIMASI ALIRAN EVENT (PORT DISTRIBUTION)
+Sistem terbagi menjadi 1 Gateway sebagai pintu masuk tunggal, 3 Layanan Internal independen, dan 1 Pusat Kluster Message Broker:
 
-### A. IDENTITY SERVICE DATABASE (PostgreSQL - eop_identity_db)
-* **roles** -> `id` (UUID, PK), `role_name` (VARCHAR(50), Unique, Not Null)
-* **menus** -> `id` (UUID, PK), `menu_name` (VARCHAR(50), Unique, Not Null), `description` (TEXT)
-* **role_permissions** -> `id` (UUID, PK), `role_id` (UUID, FK -> roles), `menu_id` (UUID, FK -> menus), `access_type` (VARCHAR(20))
-* **users** -> `id` (UUID, PK), `username` (VARCHAR(50), Unique), `email` (VARCHAR(100), Unique), `password` (VARCHAR(255), BCrypt), `role_id` (UUID, FK), `status` (VARCHAR(20) [PENDING, ACTIVE, SUSPENDED]), `refresh_token` (VARCHAR(500)), `created_at` (TIMESTAMP)
-* **merchants** -> `id` (UUID, PK), `user_id` (UUID, FK, Unique), `merchant_name` (VARCHAR(100)), `address` (TEXT), `is_verified` (BOOLEAN), `created_at` (TIMESTAMP)
-
-### B. CORE FINANCE SERVICE DATABASE (PostgreSQL & MongoDB)
-* **wallets** (PostgreSQL) -> `id` (UUID, PK), `owner_id` (UUID, Unique), `owner_type` (VARCHAR(20) [USER, MERCHANT]), `balance` (DECIMAL(19,2), CHECK balance >= 0.00), `version` (INTEGER, Default 0, **Wajib untuk Optimistic Locking**), `created_at` (TIMESTAMP), `updated_at` (TIMESTAMP)
-* **vouchers** (PostgreSQL) -> `id` (BIGSERIAL, PK), `code` (VARCHAR(50), Unique), `amount` (DECIMAL(19,2)), `is_redeemed` (BOOLEAN, Default False), `redeemed_by` (UUID), `redeemed_at` (TIMESTAMP)
-* **transactions** (MongoDB Collection) -> `invoice_id` (String, Unique Indexed), `transaction_type` (String), `status` (String [PENDING, SUCCESS, FAILED]), `amount` (Decimal128), `sender` (Object), `recipient` (Object), `raw_qris_data` (String), `note` (String), `created_at` (ISODate)
-
-### C. SUPPORT & ORACLE SERVICE DATABASE (MongoDB)
-* **complaints** (MongoDB Collection) -> `complaint_id` (String), `user_id` (String), `username` (String), `email` (String), `invoice_id` (String), `raw_message` (String), `status` (String [OPEN, IN_PROGRESS, RESOLVED]), `ai_analysis` (Object: category, priority, sentiment, score, suggested_reply), `created_at` (ISODate)
+1. **E.O.P Gateway (Port 8080):** Berbasis Spring Cloud Gateway. Bertindak sebagai Single Entry Point, penanganan CORS terpusat, dan validasi token masuk.
+2. **Identity Service (Port 8081):** Mengelola database PostgreSQL (`eop_identity_db`). Menangani autentikasi, manajemen pengguna, dan penerbitan Event terkait user (Contoh: `user.suspended`).
+3. **Core Finance Service (Port 8082):** Menggunakan database Polyglot (PostgreSQL `eop_finance_db` & MongoDB `eop_transaction_log`). Menghandle validasi saldo berjalan, pembentukan invoice QRIS, dan bertindak sebagai *Producer* utama untuk event finansial.
+4. **Support & Oracle Service (Port 8083):** Menggunakan database MongoDB (`eop_support_db`). Menangani pengaduan pengguna dengan bertindak sebagai *Consumer* yang mendengarkan antrean keluhan, memprosesnya via Google Gemini AI API, dan memicu Java Mail Sender (JSM).
+5. **Message Broker Cluster (Port 5672 untuk RabbitMQ / Port 15672 untuk Management UI):** Jantung pengelolaan State Antrean Transaksi Terdistribusi.
 
 ---
 
-## SECTION 6: SECURITY MECHANISM & DUAL-TOKEN FLOW (STATELESS SECURITY)
-1. **Access Token (JWT):** Umur eksplorasi **15 Menit**. Membawa payload `sub`, `role`, dan klaim string `permissions` (dipisah koma). Bersifat stateless, divalidasi oleh Gateway via kunci kriptografi (`JWTUtil` & `JWTFilter` di package `utility`). Otorisasi tingkat method di Controller menggunakan `@PreAuthorize` dibantu oleh `CustomPermissionEvaluator` di package `config`.
-2. **Refresh Token:** Umur eksplorasi **7 Hari**. Berupa string acak aman yang dicatat di tabel `users.refresh_token` PostgreSQL.
-3. **Mitigasi Akun Dibekukan (Suspend Account):** Ketika Admin mengubah status user menjadi `SUSPENDED`, user tetap bisa mengakses sistem menggunakan Access Token berjalan hingga maksimal 15 menit. Begitu Access Token habis, Angular HTTP Interceptor akan menangkap error `401 Unauthorized` dan memanggil `POST /api/auth/refresh`. `Identity Service` akan memeriksa database, mendeteksi status `SUSPENDED`, lalu MENOLAK penerbitan token baru sehingga user langsung ter-logout paksa.
+## SECTION 5: WORKFLOW TRANSAKSI STATEFUL & EVENT-DRIVEN (ANTI DUAL-WRITE VIA SAGA)
+Dengan hadirnya Message Broker, manipulasi saldo dan pencatatan log transaksi tidak lagi dijalankan dalam satu transaksi blok atomik lokal, melainkan diatur melalui mekanisme **Saga Pattern (Choreography/Orchestration)**:
+
+1. **Fase Inisiasi (Core Finance Service):**
+   * Merchant menembak API generate QRIS -> Core Finance membuat data transaksi di MongoDB dengan status `PENDING` dan menerbitkan pesan ke Broker pada Topic `qris-payment-initiated`.
+2. **Fase Pemrosesan Saldo (Stateful Consumer):**
+   * Consumer di Core Finance mendengarkan Topic `qris-payment-initiated`. Begitu pesan dibaca, Consumer membuka blok `@Transactional` di PostgreSQL untuk menguji kelayakan dompet via **Optimistic Locking** (`@Version`).
+   * Jika Saldo Cukup: Kredit & Debit berhasil di-commit di Postgres, lalu Consumer mem-publish event `qris-payment-success` ke Broker.
+   * Jika Saldo Kurang/Error: Postgres di-rollback otomatis, lalu Consumer mem-publish event `qris-payment-failed` ke Broker.
+3. **Fase Sinkronisasi Log (Final State):**
+   * Consumer lain yang bertugas menjaga konsistensi MongoDB mendengarkan Topic `qris-payment-success` atau `qris-payment-failed`.
+   * Dokumen transaksi di MongoDB diperbarui statusnya dari `PENDING` menjadi `SUCCESS` atau `FAILED` berdasarkan event yang diterima dari Broker (*Eventual Consistency*).
 
 ---
 
-## SECTION 7: WORKFLOW MITIGASI DUAL-WRITE & CONCURRENCY CONTROL
-Pemrosesan transaksi QRIS Dinamis dan mutasi finansial wajib menerapkan pola **State Machine** sinkron di dalam `Core Finance Service` untuk mencegah hilangnya jejak data:
-
-1. **Langkah 1 (Persiapan Tulis):** Simpan dokumen log transaksi awal ke **MongoDB** dengan status `PENDING`. Ini adalah jejak rekam awal agar mutasi tidak lenyap tanpa bukti jika terjadi kegagalan sistem setelahnya.
-2. **Langkah 2 (Eksekusi Finansial):** Masuk ke dalam blok kode beranotasi `@Transactional` (PostgreSQL). Lakukan manipulasi saldo (Kredit/Debit) pada tabel `wallets`. Di level entitas, sertakan anotasi `@Version` untuk mengaktifkan **Optimistic Locking** guna menghindari *double-spend* atau tabrakan saldo di milidetik yang sama.
-3. **Langkah 3 (Pengesahan Bukti):**
-   * Jika Langkah 2 **SUKSES**, perbarui dokumen di MongoDB tadi dari `PENDING` menjadi `SUCCESS`.
-   * Jika Langkah 2 **GAGAL** (masuk ke blok `catch`), database PostgreSQL otomatis melakukan *rollback*, lalu perbarui dokumen di MongoDB menjadi `FAILED` dengan mencatat detail error pada kolom `note`, kemudian lemparkan HTTP Exception 400 ke klien.
+## SECTION 6: SECURITY MECHANISM & STATEFUL SESSION HANDLING
+1. **Access Token & Refresh Token:** Proses verifikasi token tetap berjalan di level Gateway secara berkala.
+2. **Mekanisme Suspend User via Broker:** Ketika Admin membekukan akun di `Identity Service`, service tersebut akan langsung melempar pesan `user.suspended` ke Message Broker. `E.O.P Gateway` atau internal cache service yang bertindak sebagai Consumer akan menangkap pesan tersebut secara real-time dan langsung menandai sesi user tersebut tidak valid saat itu juga di memori, memberikan efek penendangan user secara instan tanpa menunggu token kedaluwarsa 15 menit.
 
 ---
 
-## SECTION 8: IMPLEMENTASI FITUR SPESIFIK & CLIENT INTERACTION
-* **Real-Time Polling (Angular):** Aplikasi Front-End Angular tidak menggunakan WebSocket. Pada antarmuka Dashboard Merchant saat memunculkan QRIS, Angular mengaktifkan fungsi `RxJS interval` untuk melakukan **HTTP Polling** ke Core Finance Service setiap **3-5 detik sekali** guna mengecek status `invoice_id`. Begitu status berubah menjadi `SUCCESS`, polling berhenti dan layar berubah secara real-time.
-* **Asynchronous Complaint & Gemini AI:** `Support & Oracle Service` menerima keluhan, langsung menyimpannya ke MongoDB dengan status `OPEN`, dan secara instan mengembalikan HTTP 202 Accepted ke klien. Proses analisis teks keluhan via **Google Gemini AI API** dijalankan di latar belakang menggunakan `@Async` dan dilindungi oleh `@Retryable` (max 3 kali, jeda 2 detik) jika terjadi timeout. Jika hasil analisis AI berkategori priority `HIGH`, gunakan **JavaMailSender (JSM)** untuk mengirimkan email laporan berformat HTML terstruktur ke Gmail Admin.
-* **Excel Reporting via Apache POI:** Semua fitur import/export laporan data transaksi ke dalam file Excel wajib memanfaatkan pustaka Apache POI di dalam lapisan `ServiceImpl` dan dialirkan ke klien menggunakan stream output yang tepat pada Controller.
-* **Global Error Handling:** Semua REST API wajib dikawal oleh `@ControllerAdvice` untuk menangkap Exception dan mengubahnya menjadi format JSON respons yang seragam (status, message, timestamp).
+## SECTION 7: CLIENT INTERACTION STRATEGY (HTTP POLLING & FUTURE REAL-TIME PUSH)
+1. **HTTP Polling saat ini:** Aplikasi Front-End Angular menggunakan metode **HTTP Polling** ke Core Finance Service (`GET /api/finance/transactions/status/{invoice_id}`) setiap 3-5 detik sekali untuk memantau kapan status di MongoDB bergeser dari `PENDING` menjadi `SUCCESS` setelah seluruh rantai event di Message Broker selesai berputar.
+2. **Real-time WebSockets (Rancangan Masa Depan):** Mengganti sistem HTTP Polling pada client dengan push notification real-time berbasis **WebSockets / Server-Sent Events (SSE)** melalui API Gateway untuk status transaksi QRIS dan complaint secara instan guna mengurangi overhead jaringan.
+
+---
+
+## SECTION 8: GLOBAL ERROR HANDLING & NOTIFICATION CONSUMER
+1. **Global Error Handler:** Setiap service tetap menggunakan `@ControllerAdvice` untuk menangkap exception HTTP lokal.
+2. **Dead Letter Queue (DLQ):** Jika terjadi kegagalan pembacaan pesan berulang kali pada Consumer (misal: Google Gemini AI API timeout di Support Service setelah `@Retryable` habis), pesan tersebut akan dilemparkan ke antrean khusus bernama `complaint-dlq` untuk dianalisis oleh Admin secara manual.
+3. **Notification System:** `Support & Oracle Service` bertindak sebagai Consumer asinkron murni yang dipicu oleh masuknya event pengaduan dari broker, bukan dari hit API HTTP langsung.
+4. **Mailing System Alert:** Jika prioritas tiket keluhan berstatus `HIGH` setelah dianalisis AI, sistem mengirimkan email pemberitahuan HTML secara asinkron lewat background thread pool.
+
+---
+
+## SECTION 9: RANCANGAN PENGEMBANGAN KEDEPAN (FUTURE ROADMAP)
+1. **Dashboard Admin & Manual Review UI:** Pembuatan antarmuka dashboard admin pada frontend Angular untuk meninjau secara manual tiket pengaduan berkategori `OPEN` yang gagal dianalisis oleh AI (fallback/retry yang gagal dan masuk ke DLQ).
+2. **Service Notifikasi Mandiri (Notification Service - Port 8084):** Memisahkan logika pengiriman email dan notifikasi dari `Support & Oracle Service` ke microservice baru yang didedikasikan khusus untuk mendengarkan event seperti `complaint.resolved` atau `transaction.completed`.
+3. **Resilience & Rate Limiting:** Implementasi **Resilience4j** di level API Gateway untuk sirkuit pemutus (*Circuit Breaker*) dan pembatasan laju request (*Rate Limiting*) ke downstream services guna mengamankan sistem dari serangan DDoS atau kegagalan beruntun.

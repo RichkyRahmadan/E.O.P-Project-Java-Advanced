@@ -39,6 +39,15 @@ public class GatewayFilterConfig {
 
     private final GatewayJwtFilter gatewayJwtFilter;
 
+    @org.springframework.beans.factory.annotation.Value("${eop.services.identity}")
+    private String identityUri;
+
+    @org.springframework.beans.factory.annotation.Value("${eop.services.core}")
+    private String coreUri;
+
+    @org.springframework.beans.factory.annotation.Value("${eop.services.oracle}")
+    private String oracleUri;
+
     // =========================================================================
     // ROUTE 1: Identity Service — PUBLIK (tanpa JWT filter)
     // =========================================================================
@@ -59,7 +68,19 @@ public class GatewayFilterConfig {
         return GatewayRouterFunctions.route("identity-service-auth")
                 .route(request -> request.path().startsWith("/api/auth/"),
                         HandlerFunctions.http())
-                .before(BeforeFilterFunctions.uri("http://localhost:8081"))
+                .before(BeforeFilterFunctions.uri(identityUri))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> identityServiceAdminRoute() {
+        log.info("[GatewayConfig] Route Identity Admin terdaftar: /api/admin/** -> http://localhost:8081");
+
+        return GatewayRouterFunctions.route("identity-service-admin")
+                .route(request -> request.path().startsWith("/api/admin/"),
+                        HandlerFunctions.http())
+                .before(BeforeFilterFunctions.uri(identityUri))
+                .filter(gatewayJwtFilter)
                 .build();
     }
 
@@ -84,7 +105,7 @@ public class GatewayFilterConfig {
         return GatewayRouterFunctions.route("core-finance-service")
                 .route(request -> request.path().startsWith("/api/finance/"),
                         HandlerFunctions.http())
-                .before(BeforeFilterFunctions.uri("http://localhost:8082"))
+                .before(BeforeFilterFunctions.uri(coreUri))
                 .filter(gatewayJwtFilter)
                 .build();
     }
@@ -109,7 +130,7 @@ public class GatewayFilterConfig {
         return GatewayRouterFunctions.route("support-oracle-service")
                 .route(request -> request.path().startsWith("/api/support/"),
                         HandlerFunctions.http())
-                .before(BeforeFilterFunctions.uri("http://localhost:8083"))
+                .before(BeforeFilterFunctions.uri(oracleUri))
                 .filter(gatewayJwtFilter)
                 .build();
     }

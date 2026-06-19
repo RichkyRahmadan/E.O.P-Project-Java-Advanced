@@ -166,7 +166,7 @@ INSERT INTO users (id, username, email, password, role_id, status, created_at) V
     'd1000000-0000-0000-0000-000000000001',
     'admin',
     'admin@eop.priestess.com',
-    '$2a$10$N.PQkVGGe7v5Wf5YJn0kQO6n3K0w8UHyQ/3G8s4Q1LYd0E3XsIH5W',
+    '$2a$10$yF8TVzRA2SuL9gj6HlJoeO0DmoDVuCYFxI0HrHiaxOVGr/UFnK4iG',
     'a1000000-0000-0000-0000-000000000003',
     'ACTIVE',
     NOW()

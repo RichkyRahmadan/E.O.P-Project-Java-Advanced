@@ -20,11 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
 
 /**
  * SecurityConfig — Pusat konfigurasi keamanan global Identity Service.
@@ -110,8 +106,10 @@ public class SecurityConfig {
             // --- Nonaktifkan CSRF (aman karena stateless JWT) ---
             .csrf(AbstractHttpConfigurer::disable)
 
-            // --- Aktifkan CORS dengan konfigurasi kustom ---
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // --- CORS dinonaktifkan di sini karena ditangani terpusat oleh Gateway ---
+            // Gateway (port 8080) adalah satu-satunya pintu masuk dari browser.
+            // Semua CORS header ditambahkan oleh CorsConfig.java di Gateway.
+            .cors(AbstractHttpConfigurer::disable)
 
             // --- Aturan otorisasi HTTP ---
             .authorizeHttpRequests(auth -> auth
@@ -134,53 +132,11 @@ public class SecurityConfig {
     }
 
     // =========================================================================
-    // CORS CONFIGURATION
+    // CATATAN CORS:
+    // CORS tidak dikonfigurasi di sini. Gateway (CorsConfig.java) bertanggung
+    // jawab penuh atas CORS sesuai blueprint SECTION 4 (Single Entry Point).
+    // Identity Service hanya diakses melalui Gateway, tidak langsung dari browser.
     // =========================================================================
-
-    /**
-     * Mendefinisikan aturan CORS (Cross-Origin Resource Sharing) untuk Identity Service.
-     *
-     * <p>Konfigurasi ini memungkinkan Angular frontend (yang berjalan di origin berbeda)
-     * untuk berkomunikasi dengan Identity Service. Pada lingkungan produksi, ganti
-     * wildcard {@code "*"} dengan domain Angular yang spesifik, contoh:
-     * {@code "https://eop.priestess.com"}.
-     *
-     * <p>Header {@code Authorization} diizinkan agar klien dapat mengirim Bearer Token.
-     *
-     * @return sumber konfigurasi CORS yang diregistrasikan untuk semua path ({@code /**})
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-
-        // Izinkan semua origin (development mode).
-        // GANTI dengan origin spesifik di produksi!
-        configuration.setAllowedOriginPatterns(List.of("*"));
-
-        // Metode HTTP yang diizinkan
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // Header yang boleh disertakan dalam request dari klien
-        configuration.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "X-Requested-With"
-        ));
-
-        // Izinkan klien membaca header response (termasuk Authorization jika dibutuhkan)
-        configuration.setExposedHeaders(List.of("Authorization"));
-
-        // Izinkan pengiriman credentials (diperlukan jika menggunakan cookie httpOnly)
-        configuration.setAllowCredentials(true);
-
-        // Cache preflight response selama 1 jam (3600 detik)
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
 
     // =========================================================================
     // BEAN: PASSWORD ENCODER

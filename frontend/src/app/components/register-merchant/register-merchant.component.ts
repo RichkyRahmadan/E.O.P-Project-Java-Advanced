@@ -24,6 +24,7 @@ export class RegisterMerchantComponent {
   };
 
   errorMessage: string | null = null;
+  successMessage: string | null = null;
   loading = false;
 
   onSubmit(): void {
@@ -45,12 +46,15 @@ export class RegisterMerchantComponent {
 
     this.loading = true;
     this.errorMessage = null;
+    this.successMessage = null;
 
     this.authService.registerMerchant(this.merchantData).subscribe({
       next: (res) => {
         this.loading = false;
-        // Direct merchant to the merchant dashboard
-        this.router.navigate(['/dashboard/merchant']);
+        this.successMessage = res.message || 'Registrasi Merchant berhasil. Silakan hubungi admin untuk melakukan verifikasi akun.';
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 5000);
       },
       error: (err) => {
         console.error(err);

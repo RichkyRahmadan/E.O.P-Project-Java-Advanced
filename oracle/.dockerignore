@@ -1,0 +1,8 @@
+target/
+*.class
+*.jar
+!target/*.jar
+.git/
+.vscode/
+HELP.md
+*.log

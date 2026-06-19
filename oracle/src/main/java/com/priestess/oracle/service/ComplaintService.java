@@ -1,6 +1,5 @@
 package com.priestess.oracle.service;
 
-import com.priestess.oracle.dto.SubmitComplaintRequest;
 import com.priestess.oracle.entity.ComplaintDocument;
 
 import java.util.List;
@@ -13,15 +12,6 @@ import java.util.List;
  */
 public interface ComplaintService {
 
-    /**
-     * Menerima keluhan dari pengguna, menyimpannya dengan status {@code OPEN},
-     * dan langsung mengembalikan ID keluhan. Proses analisis AI berjalan di background.
-     *
-     * @param userId  UUID pengguna dari header {@code X-User-Id}
-     * @param request data keluhan dari request body
-     * @return dokumen keluhan yang baru disimpan
-     */
-    ComplaintDocument submitComplaint(String userId, SubmitComplaintRequest request);
 
     /**
      * Mengambil detail satu keluhan berdasarkan {@code complaintId}.

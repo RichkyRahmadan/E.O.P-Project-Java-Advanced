@@ -46,7 +46,9 @@ public class JWTUtil {
     // KLAIM KUSTOM — Nama klaim yang digunakan di dalam JWT payload
     // =========================================================================
     public static final String CLAIM_USERNAME    = "username";
+    public static final String CLAIM_EMAIL       = "email";
     public static final String CLAIM_ROLE        = "role";
+    public static final String CLAIM_STATUS      = "status";
     public static final String CLAIM_PERMISSIONS = "permissions";
 
     // =========================================================================
@@ -105,7 +107,9 @@ public class JWTUtil {
      * <ul>
      *   <li>{@code sub}         — UUID pengguna (sebagai string).</li>
      *   <li>{@code username}    — Nama pengguna untuk referensi UI.</li>
+     *   <li>{@code email}       — Alamat email pengguna.</li>
      *   <li>{@code role}        — Nama role, contoh: {@code ROLE_MERCHANT}.</li>
+     *   <li>{@code status}      — Status user, contoh: {@code PENDING}.</li>
      *   <li>{@code permissions} — String menu dipisah koma, contoh:
      *                             {@code "SCAN_QRIS,GENERATE_QRIS_DYNAMIC"}.
      *                             Digunakan oleh Gateway dan {@code CustomPermissionEvaluator}.</li>
@@ -115,13 +119,17 @@ public class JWTUtil {
      *
      * @param userId      UUID unik pengguna; menjadi klaim {@code sub}
      * @param username    nama pengguna
+     * @param email       alamat email pengguna
      * @param roleName    nama role pengguna (contoh: {@code ROLE_USER})
+     * @param status      status akun pengguna
      * @param permissions daftar nama menu yang boleh diakses oleh role ini
      * @return string JWT yang telah ditandatangani (format: header.payload.signature)
      */
     public String generateAccessToken(UUID userId,
                                       String username,
+                                      String email,
                                       String roleName,
+                                      String status,
                                       List<String> permissions) {
         Instant now = Instant.now();
         String permissionString = String.join(",", permissions);
@@ -129,15 +137,17 @@ public class JWTUtil {
         String token = Jwts.builder()
                 .subject(userId.toString())
                 .claim(CLAIM_USERNAME, username)
+                .claim(CLAIM_EMAIL, email)
                 .claim(CLAIM_ROLE, roleName)
+                .claim(CLAIM_STATUS, status)
                 .claim(CLAIM_PERMISSIONS, permissionString)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(ACCESS_TOKEN_EXPIRY_MS)))
                 .signWith(getSigningKey())
                 .compact();
 
-        log.debug("[JWTUtil] Access Token diterbitkan untuk userId={}, role={}, permissions={}",
-                userId, roleName, permissionString);
+        log.debug("[JWTUtil] Access Token diterbitkan untuk userId={}, role={}, status={}, permissions={}",
+                userId, roleName, status, permissionString);
         return token;
     }
 
@@ -213,6 +223,16 @@ public class JWTUtil {
      */
     public String extractUsername(String token) {
         return parseClaims(token).get(CLAIM_USERNAME, String.class);
+    }
+
+    /**
+     * Mengekstrak email (klaim {@code email}) dari token.
+     *
+     * @param token JWT Access Token yang valid
+     * @return email pengguna
+     */
+    public String extractEmail(String token) {
+        return parseClaims(token).get(CLAIM_EMAIL, String.class);
     }
 
     /**

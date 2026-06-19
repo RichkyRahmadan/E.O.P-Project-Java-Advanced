@@ -32,6 +32,17 @@ public interface VoucherRepository extends JpaRepository<VoucherEntity, Long> {
     Optional<VoucherEntity> findAvailableByCode(@Param("code") String code);
 
     /**
+     * Menghitung jumlah voucher berdasarkan status redemption.
+     *
+     * <p>Digunakan oleh {@link com.priestess.core.scheduler.VoucherScheduler}
+     * untuk pemantauan stok voucher secara berkala via {@code @Scheduled}.
+     *
+     * @param isRedeemed {@code false} untuk voucher tersedia, {@code true} untuk yang sudah diklaim
+     * @return jumlah voucher dengan status yang sesuai
+     */
+    long countByIsRedeemed(boolean isRedeemed);
+
+    /**
      * Memeriksa apakah sebuah kode voucher valid (ada di database).
      * Tidak memeriksa status redemption.
      *

@@ -5,6 +5,7 @@ import com.priestess.identity.dto.LoginRequest;
 import com.priestess.identity.dto.RefreshTokenRequest;
 import com.priestess.identity.dto.RegisterMerchantRequest;
 import com.priestess.identity.dto.RegisterUserRequest;
+import com.priestess.identity.dto.RegisterResponse;
 import com.priestess.identity.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -68,10 +69,10 @@ public class AuthController {
 
     /**
      * Registrasi User — Daftarkan akun baru dengan role USER, status PENDING.
-     * Response: 201 Created + AuthResponse (langsung login)
+     * Response: 201 Created + RegisterResponse
      */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
+    public ResponseEntity<RegisterResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
         log.info("[AuthController] POST /api/auth/register — username: {}", request.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerUser(request));
     }
@@ -82,10 +83,10 @@ public class AuthController {
 
     /**
      * Registrasi Merchant — Daftarkan akun bisnis baru dengan role MERCHANT, status PENDING.
-     * Response: 201 Created + AuthResponse
+     * Response: 201 Created + RegisterResponse
      */
     @PostMapping("/register/merchant")
-    public ResponseEntity<AuthResponse> registerMerchant(
+    public ResponseEntity<RegisterResponse> registerMerchant(
             @Valid @RequestBody RegisterMerchantRequest request) {
         log.info("[AuthController] POST /api/auth/register/merchant — username: {}", request.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerMerchant(request));

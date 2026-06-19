@@ -5,6 +5,7 @@ import com.priestess.identity.dto.LoginRequest;
 import com.priestess.identity.dto.RefreshTokenRequest;
 import com.priestess.identity.dto.RegisterMerchantRequest;
 import com.priestess.identity.dto.RegisterUserRequest;
+import com.priestess.identity.dto.RegisterResponse;
 
 /**
  * AuthService — Kontrak logika bisnis untuk lapisan Autentikasi E.O.P.
@@ -38,20 +39,20 @@ public interface AuthService {
      * Mendaftarkan pengguna baru dengan role USER dan status PENDING.
      *
      * @param request DTO berisi username, email, password
-     * @return {@link AuthResponse} berisi token pasangan (user langsung aktif login)
+     * @return {@link RegisterResponse} berisi status registrasi
      * @throws IllegalStateException jika username atau email sudah terdaftar
      */
-    AuthResponse registerUser(RegisterUserRequest request);
+    RegisterResponse registerUser(RegisterUserRequest request);
 
     /**
      * Mendaftarkan pengguna baru dengan role MERCHANT, status PENDING,
      * dan sekaligus membuat entitas Merchant terkait.
      *
      * @param request DTO berisi data akun + nama merchant + alamat
-     * @return {@link AuthResponse} berisi token pasangan
+     * @return {@link RegisterResponse} berisi status registrasi
      * @throws IllegalStateException jika username atau email sudah terdaftar
      */
-    AuthResponse registerMerchant(RegisterMerchantRequest request);
+    RegisterResponse registerMerchant(RegisterMerchantRequest request);
 
     /**
      * Menghapus Refresh Token dari database (logout pengguna).

@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface FinanceService {
 
     /** Ambil data dompet milik pengguna yang sedang login. */
-    WalletResponse getMyWallet(UUID ownerId);
+    WalletResponse getMyWallet(UUID ownerId, String role);
 
     /** Transfer P2P antar dompet — pola Dual-Write SECTION 7. */
     TransactionResponse transfer(UUID senderOwnerId, TransferRequest request);

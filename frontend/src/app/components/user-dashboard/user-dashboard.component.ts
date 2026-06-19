@@ -49,9 +49,8 @@ export class UserDashboardComponent implements OnInit {
     this.userId = this.authService.getUserId() || '';
     this.username = this.authService.getUserId() ? 'User' : 'Guest'; // We will display general user greetings
     this.userRole = this.authService.getUserRole() || '';
+    this.userStatus = this.authService.getUserStatus() || 'PENDING';
     
-    // In our system, status is extracted from token or from the API.
-    // If the account status is PENDING, we display a notice.
     // Let's call getMyWallet to test connection and load wallet details
     this.loadWallet();
   }
@@ -60,15 +59,9 @@ export class UserDashboardComponent implements OnInit {
     this.financeService.getMyWallet().subscribe({
       next: (res) => {
         this.wallet = res;
-        // If wallet loads successfully, the account status is ACTIVE (since gateway/auth filters passed)
-        this.userStatus = 'ACTIVE';
       },
       error: (err) => {
         console.error('Failed to load wallet', err);
-        // If we get an error, it might be because the account is still PENDING
-        if (err.status === 403 || err.status === 401) {
-          this.userStatus = 'PENDING';
-        }
       }
     });
   }

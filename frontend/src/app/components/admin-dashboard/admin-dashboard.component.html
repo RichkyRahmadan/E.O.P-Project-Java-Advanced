@@ -2,8 +2,7 @@
   <!-- Topbar Header -->
   <header class="dashboard-header glass-panel admin-header">
     <div class="header-logo">
-      <span class="logo-eye">👁️</span>
-      <h2>E.O.P Admin</h2>
+      <h2>E.O.P Admin Dashboard</h2>
       <span class="badge badge-suspended font-display">System Administrator</span>
     </div>
     <div class="header-actions">
@@ -13,71 +12,106 @@
   </header>
 
   <main class="dashboard-content">
-    <!-- Left Section: Action Panels -->
     <section class="dashboard-main">
-      <div class="admin-grid">
-        <!-- 1. Verify KYC Card -->
-        <div class="glass-panel action-card">
-          <h3>👤 Verifikasi KYC Pengguna</h3>
-          <p class="card-desc">Ubah status pengguna dari PENDING menjadi ACTIVE agar dapat menggunakan fitur keuangan dompet.</p>
+      <div class="admin-grid-full">
+        <!-- 1. Verify KYC List -->
+        <div class="glass-panel action-card stitch-card mb-6">
+          <div class="card-header">
+            <h3>Daftar Verifikasi KYC Pengguna</h3>
+            <p class="card-desc">Berikut adalah pengguna baru yang memerlukan aktivasi status akun dari PENDING menjadi ACTIVE.</p>
+          </div>
           
           <div *ngIf="kycError" id="kyc-error" class="alert alert-error">{{ kycError }}</div>
           <div *ngIf="kycSuccess" id="kyc-success" class="alert alert-success">{{ kycSuccess }}</div>
 
-          <form (ngSubmit)="onVerifyKyc()" #kycForm="ngForm" class="action-form">
-            <div class="form-group">
-              <label for="targetUserIdKyc">User ID (UUID)</label>
-              <input 
-                type="text" 
-                id="targetUserIdKyc" 
-                name="targetUserIdKyc" 
-                [(ngModel)]="targetUserIdKyc" 
-                placeholder="Masukkan UUID User" 
-                required>
+          <div class="table-responsive" *ngIf="pendingUsers.length > 0; else noPendingUsers">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Tanggal Daftar</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of pendingUsers" class="animate-fade-in">
+                  <td class="font-semibold">{{ user.username }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.createdAt | date:'medium' }}</td>
+                  <td>
+                    <button 
+                      (click)="verifyKycDirect(user.id)" 
+                      class="btn btn-primary btn-sm"
+                      [disabled]="kycLoading">
+                      Aktifkan Akun
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noPendingUsers>
+            <div class="empty-state text-muted py-6 text-center">
+              Tidak ada pengguna berstatus PENDING saat ini.
             </div>
-            <button 
-              type="submit" 
-              id="btn-verify-kyc" 
-              class="btn btn-primary" 
-              [disabled]="kycLoading || !kycForm.valid">
-              <span>{{ kycLoading ? 'Memproses...' : 'Aktifkan Akun' }}</span>
-            </button>
-          </form>
+          </ng-template>
         </div>
 
-        <!-- 2. Verify Merchant Card -->
-        <div class="glass-panel action-card">
-          <h3>🏪 Verifikasi Merchant Baru</h3>
-          <p class="card-desc">Verifikasi dan setujui status bisnis toko agar dapat memicu pembuatan invoice QRIS dinamis.</p>
+        <!-- 2. Verify Merchant List -->
+        <div class="glass-panel action-card stitch-card mb-6">
+          <div class="card-header">
+            <h3>Daftar Verifikasi Merchant</h3>
+            <p class="card-desc">Berikut adalah merchant/toko baru yang mendaftar dan membutuhkan verifikasi profil bisnis.</p>
+          </div>
 
           <div *ngIf="merchantError" id="merchant-error" class="alert alert-error">{{ merchantError }}</div>
           <div *ngIf="merchantSuccess" id="merchant-success" class="alert alert-success">{{ merchantSuccess }}</div>
 
-          <form (ngSubmit)="onVerifyMerchant()" #merchantForm="ngForm" class="action-form">
-            <div class="form-group">
-              <label for="targetMerchantIdVerify">Merchant ID (UUID)</label>
-              <input 
-                type="text" 
-                id="targetMerchantIdVerify" 
-                name="targetMerchantIdVerify" 
-                [(ngModel)]="targetMerchantIdVerify" 
-                placeholder="Masukkan UUID Merchant" 
-                required>
+          <div class="table-responsive" *ngIf="pendingMerchants.length > 0; else noPendingMerchants">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nama Toko</th>
+                  <th>Pemilik (Username)</th>
+                  <th>Email</th>
+                  <th>Alamat</th>
+                  <th>Tanggal Daftar</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let merchant of pendingMerchants" class="animate-fade-in">
+                  <td class="font-semibold">{{ merchant.merchantName }}</td>
+                  <td>{{ merchant.username }}</td>
+                  <td>{{ merchant.email }}</td>
+                  <td>{{ merchant.address || 'Tidak ada alamat' }}</td>
+                  <td>{{ merchant.createdAt | date:'medium' }}</td>
+                  <td>
+                    <button 
+                      (click)="verifyMerchantDirect(merchant.id)" 
+                      class="btn btn-primary btn-sm"
+                      [disabled]="merchantLoading">
+                      Verifikasi Toko
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noPendingMerchants>
+            <div class="empty-state text-muted py-6 text-center">
+              Tidak ada merchant yang membutuhkan verifikasi saat ini.
             </div>
-            <button 
-              type="submit" 
-              id="btn-verify-merchant" 
-              class="btn btn-primary" 
-              [disabled]="merchantLoading || !merchantForm.valid">
-              <span>{{ merchantLoading ? 'Memproses...' : 'Verifikasi Toko' }}</span>
-            </button>
-          </form>
+          </ng-template>
         </div>
+      </div>
 
+      <div class="admin-grid mt-6">
         <!-- 3. Suspend User Card -->
-        <div class="glass-panel action-card border-danger">
-          <h3>🚫 Pembekuan Akun (Suspend)</h3>
-          <p class="card-desc">Bekukan status akun pengguna menjadi SUSPENDED. Pengguna akan didepak paksa dari sistem setelah 15 menit token habis.</p>
+        <div class="glass-panel action-card border-danger stitch-card">
+          <h3>Pembekuan Akun (Suspend)</h3>
+          <p class="card-desc">Bekukan status akun pengguna menjadi SUSPENDED. Pengguna akan didepak paksa dari sistem secara real-time.</p>
 
           <div *ngIf="suspendError" id="suspend-error" class="alert alert-error">{{ suspendError }}</div>
           <div *ngIf="suspendSuccess" id="suspend-success" class="alert alert-success">{{ suspendSuccess }}</div>
@@ -102,13 +136,59 @@
             </button>
           </form>
         </div>
+
+        <!-- 4. Manual Verification Card -->
+        <div class="glass-panel action-card stitch-card">
+          <h3>Pencarian KYC Manual</h3>
+          <p class="card-desc">Gunakan menu ini jika Anda ingin melakukan verifikasi secara manual menggunakan ID UUID spesifik.</p>
+          
+          <div class="manual-forms">
+            <form (ngSubmit)="onVerifyKyc()" #manualKycForm="ngForm" class="action-form mb-4">
+              <div class="form-group">
+                <label for="targetUserIdKyc">User ID (UUID)</label>
+                <input 
+                  type="text" 
+                  id="targetUserIdKyc" 
+                  name="targetUserIdKyc" 
+                  [(ngModel)]="targetUserIdKyc" 
+                  placeholder="Masukkan UUID User" 
+                  required>
+              </div>
+              <button 
+                type="submit" 
+                class="btn btn-secondary btn-sm" 
+                [disabled]="kycLoading || !manualKycForm.valid">
+                Aktifkan User (UUID)
+              </button>
+            </form>
+
+            <form (ngSubmit)="onVerifyMerchant()" #manualMerchantForm="ngForm" class="action-form">
+              <div class="form-group">
+                <label for="targetMerchantIdVerify">Merchant ID (UUID)</label>
+                <input 
+                  type="text" 
+                  id="targetMerchantIdVerify" 
+                  name="targetMerchantIdVerify" 
+                  [(ngModel)]="targetMerchantIdVerify" 
+                  placeholder="Masukkan UUID Merchant" 
+                  required>
+              </div>
+              <button 
+                type="submit" 
+                class="btn btn-secondary btn-sm" 
+                [disabled]="merchantLoading || !manualMerchantForm.valid">
+                Verifikasi Merchant (UUID)
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- Right Section: Admin Audit Logs -->
     <aside class="dashboard-side">
-      <div class="glass-panel info-card">
-        <h3>📝 Riwayat Tindakan Admin</h3>
+      <div class="glass-panel info-card stitch-card">
+        <h3>Riwayat Tindakan Admin</h3>
         <p class="card-desc">Daftar operasi yang telah dijalankan di sesi ini.</p>
         
         <div class="logs-list" *ngIf="auditLogs.length > 0; else noAudit">

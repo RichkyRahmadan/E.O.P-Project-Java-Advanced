@@ -47,6 +47,7 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.userId = this.authService.getUserId() || '';
     this.userRole = this.authService.getUserRole() || '';
+    this.userStatus = this.authService.getUserStatus() || 'PENDING';
     this.loadWallet();
   }
 
@@ -58,13 +59,9 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
     this.financeService.getMyWallet().subscribe({
       next: (res) => {
         this.wallet = res;
-        this.userStatus = 'ACTIVE';
       },
       error: (err) => {
         console.error('Failed to load wallet', err);
-        if (err.status === 403 || err.status === 401) {
-          this.userStatus = 'PENDING';
-        }
       }
     });
   }

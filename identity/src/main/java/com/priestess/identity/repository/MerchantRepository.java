@@ -4,6 +4,7 @@ import com.priestess.identity.entity.MerchantEntity;
 import com.priestess.identity.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,4 +60,9 @@ public interface MerchantRepository extends JpaRepository<MerchantEntity, UUID> 
      *         {@code false} jika belum.
      */
     boolean existsByUser(UserEntity user);
+
+    /**
+     * Mencari semua merchant berdasarkan status verifikasinya (misal: false untuk belum diverifikasi).
+     */
+    List<MerchantEntity> findAllByIsVerified(Boolean isVerified);
 }

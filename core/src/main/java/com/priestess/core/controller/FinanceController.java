@@ -48,9 +48,10 @@ public class FinanceController {
      */
     @GetMapping("/wallet")
     public ResponseEntity<WalletResponse> getMyWallet(
-            @RequestHeader("X-User-Id") String userId) {
-        log.info("[FinanceController] GET /api/finance/wallet — userId={}", userId);
-        return ResponseEntity.ok(financeService.getMyWallet(UUID.fromString(userId)));
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+        log.info("[FinanceController] GET /api/finance/wallet — userId={}, role={}", userId, role);
+        return ResponseEntity.ok(financeService.getMyWallet(UUID.fromString(userId), role));
     }
 
     // =========================================================================
@@ -64,8 +65,10 @@ public class FinanceController {
     @PostMapping("/transfer")
     public ResponseEntity<TransactionResponse> transfer(
             @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Status", required = false) String status,
             @Valid @RequestBody TransferRequest request) {
-        log.info("[FinanceController] POST /api/finance/transfer — from={}", userId);
+        log.info("[FinanceController] POST /api/finance/transfer — from={}, status={}", userId, status);
+        ensureActiveUser(status);
         return ResponseEntity.ok(financeService.transfer(UUID.fromString(userId), request));
     }
 
@@ -80,8 +83,10 @@ public class FinanceController {
     @PostMapping("/qris/generate")
     public ResponseEntity<TransactionResponse> generateQris(
             @RequestHeader("X-User-Id") String merchantId,
+            @RequestHeader(value = "X-User-Status", required = false) String status,
             @Valid @RequestBody QrisGenerateRequest request) {
-        log.info("[FinanceController] POST /api/finance/qris/generate — merchantId={}", merchantId);
+        log.info("[FinanceController] POST /api/finance/qris/generate — merchantId={}, status={}", merchantId, status);
+        ensureActiveUser(status);
         return ResponseEntity.ok(financeService.generateQris(UUID.fromString(merchantId), request));
     }
 
@@ -96,9 +101,11 @@ public class FinanceController {
     @PostMapping("/qris/pay")
     public ResponseEntity<TransactionResponse> payQris(
             @RequestHeader("X-User-Id") String buyerId,
+            @RequestHeader(value = "X-User-Status", required = false) String status,
             @Valid @RequestBody QrisPayRequest request) {
-        log.info("[FinanceController] POST /api/finance/qris/pay — buyerId={}, invoiceId={}",
-                buyerId, request.getInvoiceId());
+        log.info("[FinanceController] POST /api/finance/qris/pay — buyerId={}, invoiceId={}, status={}",
+                buyerId, request.getInvoiceId(), status);
+        ensureActiveUser(status);
         return ResponseEntity.ok(financeService.payQris(UUID.fromString(buyerId), request));
     }
 
@@ -112,10 +119,18 @@ public class FinanceController {
     @PostMapping("/voucher/redeem")
     public ResponseEntity<TransactionResponse> redeemVoucher(
             @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Status", required = false) String status,
             @Valid @RequestBody VoucherRedeemRequest request) {
-        log.info("[FinanceController] POST /api/finance/voucher/redeem — userId={}, code={}",
-                userId, request.getCode());
+        log.info("[FinanceController] POST /api/finance/voucher/redeem — userId={}, code={}, status={}",
+                userId, request.getCode(), status);
+        ensureActiveUser(status);
         return ResponseEntity.ok(financeService.redeemVoucher(UUID.fromString(userId), request));
+    }
+
+    private void ensureActiveUser(String status) {
+        if (!"ACTIVE".equalsIgnoreCase(status)) {
+            throw new IllegalStateException("Transaksi ditolak: Akun Anda belum aktif (PENDING KYC).");
+        }
     }
 
     // =========================================================================

@@ -3,6 +3,7 @@ package com.priestess.identity.repository;
 import com.priestess.identity.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -82,4 +83,9 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
      * @return {@code true} jika email sudah ada, {@code false} jika belum.
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Mencari semua pengguna dengan role tertentu dan status tertentu (misal: ROLE_USER dan PENDING).
+     */
+    List<UserEntity> findAllByRole_RoleNameAndStatus(String roleName, String status);
 }

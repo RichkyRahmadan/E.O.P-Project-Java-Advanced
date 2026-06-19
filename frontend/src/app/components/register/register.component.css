@@ -1,2 +1,107 @@
-/* Re-use and apply login styles */
-@import '../login/login.component.css';
+/* Register shares the same auth layout as login */
+/* All styles are in login.component.css — this file
+   provides only register-specific overrides if needed */
+
+/* Reuse auth-page classes from global styles + login.component.css approach:
+   Since Angular encapsulates component styles, we duplicate the core here. */
+
+.auth-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.auth-brand-panel {
+  background: var(--color-canvas-dark);
+  border-right: 1px solid var(--color-hairline-dark);
+  display: flex;
+  align-items: center;
+  padding: var(--space-section) var(--space-block);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand-panel::before {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(73,79,223,0.12) 0%, transparent 65%);
+  top: -100px;
+  left: -100px;
+  pointer-events: none;
+}
+
+.auth-brand-content {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-block);
+}
+
+.logo-icon  { font-size: 28px; line-height: 1; }
+.logo-text  { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--color-on-dark); letter-spacing: -0.3px; }
+
+.auth-headline {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 56px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  color: var(--color-on-dark);
+  margin-bottom: var(--space-xl);
+}
+
+.auth-sub {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--color-on-dark-mute);
+  max-width: 380px;
+}
+
+.auth-form-panel {
+  background: var(--color-surface-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-section) var(--space-block);
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxl);
+}
+
+.auth-form-header { display: flex; flex-direction: column; gap: var(--space-sm); }
+.auth-form-header h2 { font-family: var(--font-display); font-size: 28px; font-weight: 500; color: var(--color-on-dark); letter-spacing: -0.3px; line-height: 1.2; }
+.auth-form-header p  { font-size: 15px; color: var(--color-on-dark-mute); }
+
+.auth-form { display: flex; flex-direction: column; gap: var(--space-xl); }
+
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-hairline-dark);
+  font-size: 14px;
+  color: var(--color-on-dark-mute);
+  text-align: center;
+}
+.auth-footer a { color: var(--color-primary-bright); text-decoration: none; font-weight: 600; transition: var(--transition-fast); }
+.auth-footer a:hover { color: var(--color-on-dark); text-decoration: underline; }
+
+@media (max-width: 768px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-brand-panel { padding: var(--space-xxxl) var(--space-xxl); border-right: none; border-bottom: 1px solid var(--color-hairline-dark); min-height: unset; }
+  .auth-headline { font-size: 36px; }
+  .auth-form-panel { padding: var(--space-xxl); }
+}
