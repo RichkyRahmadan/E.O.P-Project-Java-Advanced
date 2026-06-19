@@ -8,8 +8,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Set API Gateway Base URL if it's a relative URL
-  const gatewayUrl = 'http://localhost:8080';
+  // Set API Gateway Base URL dynamically
+  const hostname = window.location.hostname;
+  const gatewayUrl = hostname === 'localhost' || hostname === '127.0.0.1'
+    ? 'http://localhost:8080'
+    : `http://${hostname}:8080`;
   let apiReq = req;
   
   if (req.url.startsWith('/api')) {
