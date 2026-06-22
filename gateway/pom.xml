@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.6</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.priestess</groupId>
 	<artifactId>gateway</artifactId>
@@ -36,8 +36,7 @@
 			<artifactId>spring-cloud-starter-gateway-server-webmvc</artifactId>
 		</dependency>
 		<dependency>
-			<!-- RabbitMQ AMQP — Message Broker Consumer untuk event user.suspended -->
-			<!-- Sesuai rules-eop-priestess.md SECTION 6: Suspend User via Broker -->
+
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>

@@ -21,20 +21,6 @@ import java.util.stream.Collectors;
 
 import java.util.UUID;
 
-/**
- * AdminServiceImpl — Implementasi operasi manajemen sistem.
- *
- * <p>Menangani verifikasi KYC, pembekuan akun, dan verifikasi merchant.
- * Semua operasi bersifat idempotent — memanggil berulang kali tidak
- * akan menghasilkan efek sampingan yang tidak diinginkan.
- *
- * <h2>Integrasi Message Broker (SECTION 6)</h2>
- * <p>Ketika Admin membekukan akun via {@link #suspendUser}, method ini
- * juga mempublikasikan event {@code user.suspended} ke RabbitMQ melalui
- * {@link IdentityEventProducer}. Gateway yang berperan sebagai Consumer
- * akan menerima event ini secara real-time dan langsung menandai sesi
- * user tersebut tidak valid di in-memory cache — efek penendangan instan.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,15 +29,8 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository       userRepository;
     private final MerchantRepository   merchantRepository;
     private final StringRedisTemplate  redisTemplate;
-    /**
-     * Producer untuk mempublikasikan event suspend ke RabbitMQ.
-     * Gateway akan mengkonsumsi event ini untuk invalidasi sesi real-time.
-     */
-    private final IdentityEventProducer identityEventProducer;
 
-    // =========================================================================
-    // VERIFY KYC
-    // =========================================================================
+    private final IdentityEventProducer identityEventProducer;
 
     @Override
     @Transactional
@@ -69,14 +48,8 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
         log.info("[AdminService] KYC diverifikasi — userId={}, status diubah ke ACTIVE.", userId);
 
-        // Perbarui seluruh sesi Redis aktif milik user ini agar Gateway
-        // langsung membaca status ACTIVE tanpa perlu logout-login ulang.
         refreshActiveSessionsInRedis(user);
     }
-
-    // =========================================================================
-    // SUSPEND USER
-    // =========================================================================
 
     @Override
     @Transactional
@@ -94,7 +67,6 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
         log.info("[AdminService] Akun dibekukan — userId={}, status diubah ke SUSPENDED.", userId);
 
-        // Hapus sesi Redis langsung di Identity service
         String userSessionsKey = "user:sessions:" + userId.toString();
         try {
             Set<String> activeTokens = redisTemplate.opsForSet().members(userSessionsKey);
@@ -109,20 +81,13 @@ public class AdminServiceImpl implements AdminService {
             log.error("[AdminService] Gagal menghapus sesi Redis saat suspend: {}", e.getMessage(), e);
         }
 
-        // Publish event ke RabbitMQ agar Gateway langsung menendang sesi user ini
-        // Sesuai SECTION 6: real-time invalidation tanpa menunggu JWT kedaluwarsa
         try {
             identityEventProducer.publishUserSuspended(userId.toString(), user.getUsername());
         } catch (Exception e) {
-            // Gagal publish tidak membatalkan suspend (DB sudah terupdate)
-            // User akan tetap ter-logout saat token kedaluwarsa (fallback 15 menit)
+
             log.error("[AdminService] Gagal publish user.suspended ke broker: {}", e.getMessage(), e);
         }
     }
-
-    // =========================================================================
-    // VERIFY MERCHANT
-    // =========================================================================
 
     @Override
     @Transactional
@@ -135,35 +100,16 @@ public class AdminServiceImpl implements AdminService {
         merchantRepository.save(merchant);
         log.info("[AdminService] Merchant diverifikasi — merchantId={}", merchantId);
 
-        // Aktifkan juga user yang memilikinya jika statusnya PENDING
         UserEntity user = merchant.getUser();
         if (user != null && "PENDING".equalsIgnoreCase(user.getStatus())) {
             user.setStatus("ACTIVE");
             userRepository.save(user);
             log.info("[AdminService] Status user milik merchant otomatis diubah menjadi ACTIVE");
 
-            // Perbarui seluruh sesi Redis aktif milik merchant ini agar Gateway
-            // langsung membaca status ACTIVE tanpa perlu logout-login ulang.
             refreshActiveSessionsInRedis(user);
         }
     }
 
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-
-    /**
-     * Memperbarui semua sesi Redis aktif milik {@code user} dengan status ACTIVE.
-     *
-     * <p>Format sesi (6 bagian dipisah {@code :::}):
-     * {@code userId:::username:::email:::role:::status:::permissions}
-     *
-     * <p>Method ini membaca semua token aktif dari Set {@code user:sessions:<userId>},
-     * lalu mengganti bagian ke-4 (index 4, status) dengan {@code "ACTIVE"} untuk
-     * setiap sesi yang masih ada, mempertahankan TTL aslinya.
-     *
-     * @param user entitas user yang baru saja di-ACTIVE-kan
-     */
     private void refreshActiveSessionsInRedis(UserEntity user) {
         String userSessionsKey = "user:sessions:" + user.getId().toString();
         try {
@@ -177,15 +123,14 @@ public class AdminServiceImpl implements AdminService {
             for (String token : activeTokens) {
                 String sessionKey = "session:" + token;
                 String sessionRaw = redisTemplate.opsForValue().get(sessionKey);
-                if (sessionRaw == null) continue; // sesi sudah expired
+                if (sessionRaw == null) continue;
 
                 String[] parts = sessionRaw.split(":::", -1);
                 if (parts.length >= 6) {
-                    // Ganti bagian ke-4 (index 4) — status — dengan ACTIVE
+
                     parts[4] = "ACTIVE";
                     String updatedSession = String.join(":::", parts);
 
-                    // Ambil TTL sisa agar tidak memperpanjang umur token
                     Long ttlSeconds = redisTemplate.getExpire(sessionKey, TimeUnit.SECONDS);
                     long remainingTtl = (ttlSeconds != null && ttlSeconds > 0) ? ttlSeconds : 900L;
 
@@ -199,8 +144,7 @@ public class AdminServiceImpl implements AdminService {
                     activeTokens.size(), user.getId());
 
         } catch (Exception e) {
-            // Gagal refresh Redis tidak membatalkan verifikasi (DB sudah terupdate)
-            // Merchant hanya perlu logout dan login ulang sebagai fallback.
+
             log.error("[AdminService] Gagal memperbarui sesi Redis saat verifikasi: {}", e.getMessage(), e);
         }
     }

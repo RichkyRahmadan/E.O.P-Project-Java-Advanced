@@ -8,13 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * RegisterMerchantRequest — DTO untuk request body {@code POST /api/auth/register/merchant}.
- *
- * <p>Digunakan oleh calon Merchant untuk mendaftarkan akun bisnis.
- * Selain data akun User biasa, Merchant juga wajib menyertakan informasi
- * nama toko dan alamat.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

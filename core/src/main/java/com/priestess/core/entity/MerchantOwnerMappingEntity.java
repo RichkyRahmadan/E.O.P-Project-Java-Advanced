@@ -13,12 +13,6 @@ import lombok.ToString;
 
 import java.util.UUID;
 
-/**
- * MerchantOwnerMappingEntity — Menyimpan relasi antara akun user merchant,
- * profil merchant, dan user owner pemilik merchant.
- *
- * <p>Data diisi asinkron via event merchant.registered dari Identity Service.
- */
 @Getter
 @Setter
 @NoArgsConstructor

@@ -15,22 +15,6 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
-/**
- * RetryableGeminiExecutor — Bean terpisah yang mengelola logika retry Gemini API.
- *
- * <h2>Alasan Dipisah dari GeminiAiServiceImpl</h2>
- * <p>Spring AOP proxy tidak bisa membungkus method yang sama dengan DUA proxy
- * sekaligus (@Async dari GeminiAiServiceImpl + @Retryable dari class ini).
- * Solusinya: delegasikan eksekusi ke bean lain — proxy @Retryable bekerja
- * pada bean ini, sementara proxy @Async bekerja pada GeminiAiServiceImpl.
- *
- * <h2>Alur Retry</h2>
- * <pre>
- *   Percobaan 1 → Gagal → Tunggu 2 detik
- *   Percobaan 2 → Gagal → Tunggu 2 detik
- *   Percobaan 3 → Gagal → Exception terakhir di-rethrow ke GeminiAiServiceImpl
- * </pre>
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,21 +30,14 @@ public class RetryableGeminiExecutor {
     @Value("${gemini.api.url}")
     private String geminiApiUrl;
 
-    /**
-     * Mengeksekusi analisis Gemini dengan retry otomatis.
-     * Dipanggil dari {@code GeminiAiServiceImpl.analyzeComplaint()} yang @Async.
-     *
-     * @param complaint dokumen keluhan yang akan dianalisis
-     */
     @Retryable(
         retryFor = {Exception.class},
         maxAttempts = 3,
-        backoff = @Backoff(delay = 2000) // 2 detik jeda antar percobaan
+        backoff = @Backoff(delay = 2000)
     )
     public void executeWithRetry(ComplaintDocument complaint) {
         log.info("[GeminiExecutor] Memulai analisis — complaintId={}", complaint.getComplaintId());
 
-        // Tandai IN_PROGRESS di MongoDB
         complaint.setStatus("IN_PROGRESS");
         complaintRepository.save(complaint);
 
@@ -69,7 +46,6 @@ public class RetryableGeminiExecutor {
             String rawResponse = callGeminiApi(prompt);
             ComplaintDocument.AiAnalysis analysis = parseGeminiResponse(rawResponse);
 
-            // Simpan hasil analisis ke MongoDB
             complaint.setAiAnalysis(analysis);
             complaint.setStatus("RESOLVED");
             complaintRepository.save(complaint);
@@ -77,7 +53,6 @@ public class RetryableGeminiExecutor {
             log.info("[GeminiExecutor] Selesai — complaintId={}, priority={}",
                     complaint.getComplaintId(), analysis.getPriority());
 
-            // Kirim email admin jika prioritas HIGH (blueprint SECTION 8)
             if ("HIGH".equalsIgnoreCase(analysis.getPriority())) {
                 log.warn("[GeminiExecutor] Priority HIGH terdeteksi — kirim email admin");
                 emailService.sendHighPriorityAlert(complaint);
@@ -86,17 +61,13 @@ public class RetryableGeminiExecutor {
         } catch (Exception e) {
             log.warn("[GeminiExecutor] Percobaan gagal untuk complaintId={}: {}",
                     complaint.getComplaintId(), e.getMessage());
-            // Kembalikan ke OPEN agar status tidak stuck di IN_PROGRESS
+
             complaint.setStatus("OPEN");
             complaintRepository.save(complaint);
-            // Re-throw WAJIB agar @Retryable mendeteksi kegagalan dan retry
-            throw new RuntimeException("Analisis Gemini gagal: " + e.getMessage(), e);
+
+            throw new RuntimeException("Analisis Gemini gagal (fitur under development): " + e.getMessage(), e);
         }
     }
-
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
 
     private String buildPrompt(String rawMessage) {
         return """
@@ -123,7 +94,7 @@ public class RetryableGeminiExecutor {
     }
 
     private String callGeminiApi(String prompt) {
-        // RestClient.create() ringan — tidak perlu pooling untuk use case ini
+
         RestClient restClient = RestClient.create();
 
         Map<String, Object> requestBody = Map.of(
@@ -146,7 +117,6 @@ public class RetryableGeminiExecutor {
         JsonNode root = objectMapper.readTree(rawResponse);
         JsonNode candidates = root.path("candidates");
 
-        // --- GUARD: Candidates kosong (diblokir safety filter atau output kosong) ---
         if (candidates.isMissingNode() || !candidates.isArray() || candidates.isEmpty()) {
             String blockReason = root.path("promptFeedback").path("blockReason").asText("UNKNOWN");
             log.warn("[GeminiExecutor] Respons candidates kosong. Alasan blokir: {}. Menggunakan fallback analysis.", blockReason);
@@ -155,7 +125,6 @@ public class RetryableGeminiExecutor {
 
         JsonNode firstCandidate = candidates.get(0);
 
-        // --- GUARD: Cek finishReason — jika bukan STOP, kemungkinan output terpotong/kosong ---
         String finishReason = firstCandidate.path("finishReason").asText("UNKNOWN");
         if (!"STOP".equalsIgnoreCase(finishReason)) {
             log.warn("[GeminiExecutor] finishReason bukan STOP: {}. Menggunakan fallback analysis.", finishReason);
@@ -170,7 +139,6 @@ public class RetryableGeminiExecutor {
 
         String text = parts.get(0).path("text").asText();
 
-        // Bersihkan markdown wrapper ```json ... ``` jika ada dari Gemini
         text = text.replace("```json", "").replace("```", "").trim();
 
         if (text.isBlank()) {
@@ -180,12 +148,6 @@ public class RetryableGeminiExecutor {
         return objectMapper.readValue(text, ComplaintDocument.AiAnalysis.class);
     }
 
-    /**
-     * Membuat objek AiAnalysis dengan nilai default yang aman sebagai fallback
-     * ketika Gemini API memblokir atau mengembalikan respons kosong.
-     *
-     * @param reason keterangan alasan fallback untuk ditampilkan di field suggestedReply
-     */
     private ComplaintDocument.AiAnalysis buildFallbackAnalysis(String reason) {
         ComplaintDocument.AiAnalysis fallback = new ComplaintDocument.AiAnalysis();
         fallback.setCategory("GENERAL_INQUIRY");

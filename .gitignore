@@ -1,6 +1,3 @@
-# =============================================================================
-# Maven Build Artifacts
-# =============================================================================
 target/
 *.pom.properties
 *.pom.sha1
@@ -10,9 +7,6 @@ target/
 *.tar.gz
 *.rar
 
-# =============================================================================
-# IDEs and Editors
-# =============================================================================
 .idea/
 *.iml
 *.iws
@@ -29,34 +23,33 @@ tmp/
 *~
 .DS_Store
 
-# =============================================================================
-# Logs
-# =============================================================================
 *.log
 logs/
 
-# =============================================================================
-# Node / Angular Frontend
-# =============================================================================
 node_modules/
 .angular/
 dist/
 out-tsc/
 
-# =============================================================================
-# KEAMANAN — File konfigurasi berisi kredensial TIDAK BOLEH masuk ke Git
-# Setiap developer harus membuat file ini secara lokal di komputernya sendiri.
-# =============================================================================
 **/application.properties
 **/application.yml
 **/application-*.properties
 **/application-*.yml
 
-# Kecualikan file konfigurasi template/example yang BOLEH di-commit
 !**/application.properties.example
 !**/application.yml.example
 
-# Env files
 .env
 .env.local
 .env.*.local
+
+Docs/
+!Docs/azure_docker_deployment_guide.md
+!Docs/progress.md
+!Docs/DESIGN.md
+!Docs/setup.md
+
+.agents/
+_clean.js
+_format.js
+_mark_dev.js

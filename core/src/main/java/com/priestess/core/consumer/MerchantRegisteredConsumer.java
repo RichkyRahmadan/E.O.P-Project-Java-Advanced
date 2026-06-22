@@ -14,10 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
-/**
- * MerchantRegisteredConsumer — Consumer yang mendengarkan event pendaftaran merchant
- * dari Identity Service untuk memetakan merchantUserId ke ownerUserId/ownerPhoneNumber.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,7 +31,6 @@ public class MerchantRegisteredConsumer {
             UUID merchantId = UUID.fromString(event.getMerchantId());
             UUID ownerUserId = UUID.fromString(event.getOwnerUserId());
 
-            // Simpan atau update mapping
             MerchantOwnerMappingEntity mapping = mappingRepository.findByMerchantUserId(merchantUserId)
                     .orElse(new MerchantOwnerMappingEntity());
 

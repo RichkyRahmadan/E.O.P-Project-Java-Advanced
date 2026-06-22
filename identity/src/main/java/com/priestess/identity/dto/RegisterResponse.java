@@ -5,10 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * RegisterResponse — DTO untuk response setelah registrasi berhasil.
- * Mengembalikan informasi status registrasi dan pesan instruksi bagi pengguna.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

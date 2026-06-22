@@ -13,15 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * GlobalExceptionHandler — Menangkap semua exception dan mengubahnya menjadi
- * format JSON yang seragam menggunakan {@link ApiResponse}.
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /** Menangani error validasi @Valid (field tidak memenuhi constraint). */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationErrors(
             MethodArgumentNotValidException ex) {
@@ -36,14 +31,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Validasi input gagal: " + errors));
     }
 
-    /** Menangani ResponseStatusException (404 Not Found, dsb.). */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode())
                 .body(ApiResponse.error(ex.getStatusCode().value(), ex.getReason()));
     }
 
-    /** Fallback: menangani exception yang tidak terduga. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("[GlobalExceptionHandler] Unexpected error: {}", ex.getMessage(), ex);

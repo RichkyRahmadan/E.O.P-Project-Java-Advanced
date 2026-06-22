@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** DTO response untuk data riwayat transaksi (dari MongoDB). */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class TransactionResponse {
     private String      invoiceId;

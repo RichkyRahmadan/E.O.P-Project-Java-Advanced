@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** DTO untuk request klaim kode voucher — {@code POST /api/finance/voucher/redeem}. */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class VoucherRedeemRequest {
 

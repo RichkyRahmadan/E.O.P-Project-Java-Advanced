@@ -10,31 +10,31 @@ import { authGuard } from './guards/auth.guard';
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
-  
-  { 
-    path: 'dashboard/user', 
-    component: UserDashboardComponent, 
-    canActivate: [authGuard], 
-    data: { role: 'USER' } 
+
+  {
+    path: 'dashboard/user',
+    component: UserDashboardComponent,
+    canActivate: [authGuard],
+    data: { role: 'USER' }
   },
-  { 
-    path: 'dashboard/merchant', 
-    component: MerchantDashboardComponent, 
-    canActivate: [authGuard], 
-    data: { role: 'MERCHANT' } 
+  {
+    path: 'dashboard/merchant',
+    component: MerchantDashboardComponent,
+    canActivate: [authGuard],
+    data: { role: 'MERCHANT' }
   },
-  { 
-    path: 'dashboard/admin', 
-    component: AdminDashboardComponent, 
-    canActivate: [authGuard], 
-    data: { role: 'ADMIN' } 
+  {
+    path: 'dashboard/admin',
+    component: AdminDashboardComponent,
+    canActivate: [authGuard],
+    data: { role: 'ADMIN' }
   },
-  { 
-    path: 'support', 
-    component: SupportComplaintsComponent, 
-    canActivate: [authGuard] 
+  {
+    path: 'support',
+    component: SupportComplaintsComponent,
+    canActivate: [authGuard]
   },
-  
+
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
 ];

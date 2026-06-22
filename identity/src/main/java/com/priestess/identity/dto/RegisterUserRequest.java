@@ -8,13 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * RegisterUserRequest — DTO untuk request body {@code POST /api/auth/register}.
- *
- * <p>Digunakan oleh calon pengguna (User) untuk mendaftarkan akun baru.
- * Akun yang berhasil dibuat akan berstatus {@code PENDING} sampai Admin
- * melakukan verifikasi KYC.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

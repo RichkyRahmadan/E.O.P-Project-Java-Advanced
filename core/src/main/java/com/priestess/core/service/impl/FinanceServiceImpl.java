@@ -25,36 +25,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * FinanceServiceImpl — Implementasi lengkap seluruh operasi finansial.
- *
- * <p>Menerapkan pola <b>Event-Driven Saga Pattern</b> via RabbitMQ sesuai
- * rules-eop-priestess.md SECTION 5 (Workflow Transaksi Stateful & Event-Driven):
- *
- * <h2>Alur Pembayaran QRIS (Saga Choreography)</h2>
- * <ol>
- *   <li><b>Fase 1 — Inisiasi (method ini):</b> Simpan log {@code PENDING} ke MongoDB.
- *       Publish event {@code qris.payment.initiated} ke RabbitMQ. Return LANGSUNG
- *       ke client dengan status {@code PENDING}.</li>
- *   <li><b>Fase 2 — Pemrosesan Saldo ({@link com.priestess.core.consumer.QrisPaymentConsumer}):</b>
- *       Consumer mendengarkan event, membuka {@code @Transactional} di PostgreSQL,
- *       mutasi saldo dengan Optimistic Locking. Publish {@code qris.payment.success}
- *       atau {@code qris.payment.failed} ke broker.</li>
- *   <li><b>Fase 3 — Sinkronisasi Log ({@link com.priestess.core.consumer.TransactionLogConsumer}):</b>
- *       Consumer memperbarui MongoDB dari {@code PENDING} menjadi {@code SUCCESS}
- *       atau {@code FAILED} (Eventual Consistency).</li>
- * </ol>
- *
- * <h2>HTTP Polling untuk Status Real-Time</h2>
- * <p>Angular Frontend melakukan polling ke
- * {@code GET /api/finance/transactions/status/{invoiceId}} setiap 3-5 detik
- * untuk memantau kapan status bergeser dari {@code PENDING} (sesuai SECTION 7).
- *
- * <h2>Operasi Lain (Transfer, Voucher, Top-Up)</h2>
- * <p>Masih menggunakan Dual-Write sinkron karena tidak ada cross-service dependency.
- * Hanya QRIS Payment yang memerlukan Saga Pattern karena melibatkan dua wallet
- * (buyer dan merchant) yang mungkin berada dalam kondisi race condition tinggi.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -64,15 +34,8 @@ public class FinanceServiceImpl implements FinanceService {
     private final VoucherRepository     voucherRepository;
     private final TransactionRepository transactionRepository;
     private final MerchantOwnerMappingRepository merchantOwnerMappingRepository;
-    /**
-     * Producer untuk mempublikasikan event QRIS ke RabbitMQ.
-     * Sesuai SECTION 3 blueprint: komunikasi ke broker dilakukan via Producer bean.
-     */
-    private final FinanceEventProducer  financeEventProducer;
 
-    // =========================================================================
-    // GET MY WALLET
-    // =========================================================================
+    private final FinanceEventProducer  financeEventProducer;
 
     @Override
     @Transactional
@@ -85,19 +48,6 @@ public class FinanceServiceImpl implements FinanceService {
         return toWalletResponse(wallet);
     }
 
-    // =========================================================================
-    // TRANSFER P2P
-    // =========================================================================
-
-    /**
-     * Transfer P2P dengan pola Dual-Write:
-     * Langkah 1 (MongoDB PENDING) berjalan di luar transaksi PostgreSQL.
-     * Langkah 2 (PostgreSQL debit+kredit) dibungkus {@code @Transactional}.
-     * Langkah 3 (MongoDB SUCCESS/FAILED) dieksekusi berdasarkan hasil Langkah 2.
-     *
-     * <p>Seluruh logika PostgreSQL ada di dalam method ini secara langsung
-     * untuk menghindari masalah Spring AOP self-invocation.
-     */
     @Override
     @Transactional
     public TransactionResponse transfer(UUID senderOwnerId, String role, TransferRequest request) {
@@ -110,10 +60,8 @@ public class FinanceServiceImpl implements FinanceService {
             ownerType = "MERCHANT";
         }
 
-        // LANGKAH 1 — Baca data awal (masih dalam @Transactional yang sama)
         WalletEntity senderWallet = findWalletByOwner(senderOwnerId, ownerType);
 
-        // Simpan PENDING ke MongoDB SEBELUM mutasi PostgreSQL
         TransactionDocument doc = TransactionDocument.builder()
                 .invoiceId(invoiceId)
                 .transactionType("TRANSFER")
@@ -130,7 +78,6 @@ public class FinanceServiceImpl implements FinanceService {
                 .build();
         transactionRepository.save(doc);
 
-        // LANGKAH 2 — Eksekusi mutasi PostgreSQL (dalam @Transactional yang sama)
         try {
             validateSufficientBalance(senderWallet, request.getAmount());
 
@@ -139,7 +86,6 @@ public class FinanceServiceImpl implements FinanceService {
                     .or(() -> walletRepository.findByOwnerIdAndOwnerType(recipientUuid, "USER"))
                     .orElseThrow(() -> new IllegalStateException("Wallet penerima tidak ditemukan."));
 
-            // Jika sender adalah Merchant, validasi bahwa wallet penerima milik owner merchant ini
             if (role != null && role.contains("MERCHANT")) {
                 MerchantOwnerMappingEntity mapping = merchantOwnerMappingRepository.findByMerchantUserId(senderOwnerId)
                         .orElseThrow(() -> new IllegalStateException("Data owner untuk merchant ini tidak ditemukan. Hubungi CS."));
@@ -148,15 +94,12 @@ public class FinanceServiceImpl implements FinanceService {
                 }
             }
 
-            // Debit sender — @Version Optimistic Locking aktif secara otomatis
             senderWallet.setBalance(senderWallet.getBalance().subtract(request.getAmount()));
             walletRepository.save(senderWallet);
 
-            // Kredit recipient
             recipientWallet.setBalance(recipientWallet.getBalance().add(request.getAmount()));
             walletRepository.save(recipientWallet);
 
-            // LANGKAH 3 — Update MongoDB SUCCESS
             doc.getRecipient().setWalletId(recipientWallet.getId().toString());
             doc.getRecipient().setUserId(recipientWallet.getOwnerId().toString());
             doc.setStatus("SUCCESS");
@@ -165,8 +108,7 @@ public class FinanceServiceImpl implements FinanceService {
             log.info("[FinanceService] Transfer berhasil — invoiceId={}", invoiceId);
 
         } catch (Exception e) {
-            // LANGKAH 3 (GAGAL) — PostgreSQL di-rollback otomatis oleh @Transactional,
-            // update MongoDB ke FAILED sebagai bukti kegagalan
+
             doc.setStatus("FAILED");
             doc.setNote("ERROR: " + e.getMessage());
             transactionRepository.save(doc);
@@ -178,17 +120,6 @@ public class FinanceServiceImpl implements FinanceService {
         return toTransactionResponse(doc);
     }
 
-    // =========================================================================
-    // TRANSFER KE OWNER (Merchant → Owner otomatis)
-    // =========================================================================
-
-    /**
-     * Transfer dari wallet MERCHANT ke wallet OWNER secara otomatis.
-     *
-     * <p>Owner diidentifikasi dari tabel {@code merchant_owner_mappings}
-     * tanpa perlu input manual dari merchant. Implementasi menggunakan
-     * pola Dual-Write yang sama dengan transfer biasa.
-     */
     @Override
     @Transactional
     public TransactionResponse transferToOwner(UUID merchantUserId, java.math.BigDecimal amount, String note) {
@@ -196,20 +127,17 @@ public class FinanceServiceImpl implements FinanceService {
         log.info("[FinanceService] Transfer ke owner dimulai — invoiceId={}, merchant={}, amount={}",
                 invoiceId, merchantUserId, amount);
 
-        // Cari mapping merchant → owner
         MerchantOwnerMappingEntity mapping = merchantOwnerMappingRepository.findByMerchantUserId(merchantUserId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Data owner untuk merchant ini tidak ditemukan. Silakan hubungi CS."));
 
         UUID ownerUserId = mapping.getOwnerUserId();
 
-        // Cari wallet sender (MERCHANT) dan recipient (USER milik owner)
         WalletEntity senderWallet = findWalletByOwner(merchantUserId, "MERCHANT");
         WalletEntity recipientWallet = walletRepository.findByOwnerIdAndOwnerType(ownerUserId, "USER")
                 .orElseThrow(() -> new IllegalStateException(
                         "Wallet owner tidak ditemukan. Pastikan owner sudah pernah login."));
 
-        // Simpan PENDING ke MongoDB
         TransactionDocument doc = TransactionDocument.builder()
                 .invoiceId(invoiceId)
                 .transactionType("TRANSFER_TO_OWNER")
@@ -230,15 +158,12 @@ public class FinanceServiceImpl implements FinanceService {
         try {
             validateSufficientBalance(senderWallet, amount);
 
-            // Debit merchant wallet
             senderWallet.setBalance(senderWallet.getBalance().subtract(amount));
             walletRepository.save(senderWallet);
 
-            // Kredit owner wallet
             recipientWallet.setBalance(recipientWallet.getBalance().add(amount));
             walletRepository.save(recipientWallet);
 
-            // Update MongoDB ke SUCCESS
             doc.setStatus("SUCCESS");
             transactionRepository.save(doc);
 
@@ -255,18 +180,12 @@ public class FinanceServiceImpl implements FinanceService {
         return toTransactionResponse(doc);
     }
 
-    // =========================================================================
-    // GENERATE QRIS DINAMIS
-    // =========================================================================
-
     @Override
     @Transactional
     public TransactionResponse generateQris(UUID merchantOwnerId, QrisGenerateRequest request) {
         String invoiceId = "QRIS-" + UUID.randomUUID();
         WalletEntity merchantWallet = findWalletByOwner(merchantOwnerId, "MERCHANT");
 
-        // QR hanya menyimpan invoiceId — user scan lalu masukkan invoiceId ke aplikasi
-        // untuk membayar. Amount dan detail merchant dibaca dari MongoDB saat pembayaran.
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiresAt = now.plusMinutes(5);
 
@@ -279,7 +198,7 @@ public class FinanceServiceImpl implements FinanceService {
                         .userId(merchantOwnerId.toString())
                         .walletId(merchantWallet.getId().toString())
                         .build())
-                .rawQrisData(invoiceId)   // QR cukup encode invoiceId saja
+                .rawQrisData(invoiceId)
                 .expiresAt(expiresAt)
                 .note(request.getNote())
                 .build();
@@ -290,22 +209,6 @@ public class FinanceServiceImpl implements FinanceService {
         return toTransactionResponse(doc);
     }
 
-    // =========================================================================
-    // PAY QRIS
-    // =========================================================================
-
-    /**
-     * Memulai alur pembayaran QRIS via Saga Pattern (Fase 1 dari 3).
-     *
-     * <p>Method ini TIDAK lagi memproses mutasi saldo secara sinkron.
-     * Sebaliknya, ia hanya memvalidasi bahwa invoice PENDING dan buyer ada,
-     * lalu mempublikasikan event ke RabbitMQ. Pemrosesan saldo dilanjutkan
-     * secara asinkron oleh {@code QrisPaymentConsumer}.
-     *
-     * <p>Response yang dikembalikan masih berstatus {@code PENDING}. Angular
-     * Frontend harus melakukan HTTP Polling ke endpoint status untuk memantau
-     * perubahan ke {@code SUCCESS} atau {@code FAILED} (sesuai SECTION 7).
-     */
     @Override
     @Transactional
     public TransactionResponse payQris(UUID buyerOwnerId, QrisPayRequest request) {
@@ -313,7 +216,6 @@ public class FinanceServiceImpl implements FinanceService {
         log.info("[FinanceService] Inisiasi pembayaran QRIS (Saga Fase 1) — invoiceId={}, buyer={}",
                 invoiceId, buyerOwnerId);
 
-        // Validasi invoice ada dan masih PENDING
         TransactionDocument doc = transactionRepository.findByInvoiceId(invoiceId)
                 .orElseThrow(() -> new IllegalStateException("Invoice QRIS tidak ditemukan: " + invoiceId));
 
@@ -322,7 +224,6 @@ public class FinanceServiceImpl implements FinanceService {
                     "Invoice " + invoiceId + " sudah tidak bisa dibayar (status: " + doc.getStatus() + ").");
         }
 
-        // Validasi expiry — jika sudah lewat 5 menit, tandai DENIED dan tolak
         if (doc.getExpiresAt() != null && LocalDateTime.now().isAfter(doc.getExpiresAt())) {
             doc.setStatus("DENIED");
             doc.setNote("Invoice kedaluwarsa — pembayaran tidak dilakukan dalam batas 5 menit.");
@@ -333,11 +234,8 @@ public class FinanceServiceImpl implements FinanceService {
                     "Invoice QRIS sudah kedaluwarsa. Minta merchant untuk generate QRIS baru.");
         }
 
-        // Validasi buyer wallet ada (early check sebelum publish ke broker)
         WalletEntity buyerWallet = findWalletByOwner(buyerOwnerId, "USER");
 
-        // FASE 1: Publish event ke RabbitMQ — pemrosesan saldo dilanjutkan oleh Consumer
-        // QrisPaymentConsumer akan mendengarkan event ini dan memproses mutasi saldo
         financeEventProducer.publishQrisInitiated(
                 invoiceId,
                 buyerOwnerId.toString(),
@@ -346,13 +244,8 @@ public class FinanceServiceImpl implements FinanceService {
 
         log.info("[FinanceService] Event qris.payment.initiated dipublish — invoiceId={}", invoiceId);
 
-        // Return PENDING — Angular harus polling status untuk menunggu hasil akhir
         return toTransactionResponse(doc);
     }
-
-    // =========================================================================
-    // REDEEM VOUCHER
-    // =========================================================================
 
     @Override
     @Transactional
@@ -406,10 +299,6 @@ public class FinanceServiceImpl implements FinanceService {
         return toTransactionResponse(doc);
     }
 
-    // =========================================================================
-    // GET TRANSACTION STATUS (untuk polling Angular)
-    // =========================================================================
-
     @Override
     @Transactional(readOnly = true)
     public TransactionResponse getTransactionStatus(String invoiceId) {
@@ -418,10 +307,6 @@ public class FinanceServiceImpl implements FinanceService {
                         "Transaksi dengan invoice ID '" + invoiceId + "' tidak ditemukan."));
         return toTransactionResponse(doc);
     }
-
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
 
     private WalletEntity findWalletByOwner(UUID ownerId, String defaultOwnerType) {
         return walletRepository.findByOwnerIdAndOwnerType(ownerId, defaultOwnerType)

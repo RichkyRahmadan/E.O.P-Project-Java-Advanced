@@ -1,299 +1,57 @@
-# ============================================================
-# E.O.P (Eyes Of Priestess) — Docker Compose
-# Stateful Microservices + Event-Driven Architecture
+# =============================================================
+# E.O.P (Eyes Of Priestess) — docker-compose.yml (Placeholder)
+# =============================================================
+# Konfigurasi Docker Compose asli tidak disertakan di repository publik.
+# File ini hanya menampilkan struktur layanan secara umum.
+# Silakan lihat Docs/azure_docker_deployment_guide.md untuk panduan deployment.
 #
-# Services:
-#   Infrastructure : postgres-identity, postgres-finance, mongodb, rabbitmq
-#   Backend        : gateway (8080), identity (8081), core (8082), oracle (8083)
-#   Frontend       : frontend (80)
-#
-# Cara menjalankan:
-#   1. cp .env.example .env  (lalu isi nilai yang sesuai)
-#   2. docker compose up --build -d
-# ============================================================
+# Layanan yang digunakan:
+#   - PostgreSQL 16    (eop_identity_db, eop_finance_db)
+#   - MongoDB 7        (eop_transaction_log, eop_support_db)
+#   - Redis 7          (session cache)
+#   - RabbitMQ 3.13    (message broker)
+#   - Identity Service (Port 8081)
+#   - Core Finance     (Port 8082)
+#   - Oracle & Support (Port 8083)
+#   - Gateway          (Port 8080)
+#   - Frontend/Nginx   (Port 80)
+# =============================================================
 
-name: eop-stack
-
-# ============================================================
-# NETWORKS
-# ============================================================
-networks:
-  eop-backend:
-    driver: bridge
-  eop-frontend:
-    driver: bridge
-
-# ============================================================
-# VOLUMES (persisten data)
-# ============================================================
-volumes:
-  pg-identity-data:
-  pg-finance-data:
-  mongo-data:
-  rabbitmq-data:
-  redis-data:
-
-# ============================================================
-# SERVICES
-# ============================================================
 services:
-
-  # ----------------------------------------------------------
-  # INFRASTRUCTURE: PostgreSQL untuk Identity Service
-  # ----------------------------------------------------------
-  postgres-identity:
+  postgres:
     image: postgres:16-alpine
-    container_name: eop-postgres-identity
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: eop_identity_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rechyone}
-    ports:
-      - "5433:5432"
-    volumes:
-      - pg-identity-data:/var/lib/postgresql/data
-    networks:
-      - eop-backend
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d eop_identity_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # environment & volumes dikonfigurasi via .env
 
-  # ----------------------------------------------------------
-  # INFRASTRUCTURE: PostgreSQL untuk Core Finance Service
-  # ----------------------------------------------------------
-  postgres-finance:
-    image: postgres:16-alpine
-    container_name: eop-postgres-finance
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: eop_finance_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rechyone}
-    ports:
-      - "5434:5432"
-    volumes:
-      - pg-finance-data:/var/lib/postgresql/data
-    networks:
-      - eop-backend
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d eop_finance_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ----------------------------------------------------------
-  # INFRASTRUCTURE: MongoDB (Transaction Log + Support DB)
-  # ----------------------------------------------------------
   mongodb:
-    image: mongo:7-jammy
-    container_name: eop-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-rechYone}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}
-    ports:
-      - "127.0.0.1:27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - eop-backend
-    healthcheck:
-      test: ["CMD", "mongosh",
-             "--username", "${MONGO_INITDB_ROOT_USERNAME:-rechYone}",
-             "--password", "${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}",
-             "--authenticationDatabase", "admin",
-             "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    image: mongo:7
 
-  # ----------------------------------------------------------
-  # INFRASTRUCTURE: RabbitMQ Message Broker
-  # Management UI: http://localhost:15672 (guest/guest)
-  # ----------------------------------------------------------
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: eop-rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
-    ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - eop-backend
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-
-  # ----------------------------------------------------------
-  # INFRASTRUCTURE: Redis Cache & Session Store
-  # ----------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: eop-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - eop-backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # ----------------------------------------------------------
-  # BACKEND: Identity Service (Port 8081)
-  # ----------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+
   identity:
-    build:
-      context: ./identity
-      dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-eop}/identity:latest
-    container_name: eop-identity
-    restart: unless-stopped
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-identity:5432/eop_identity_db
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-rechyone}
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-guest}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-Priestess_EOP_UAS_Secret_Key_2025_Secure!}
-      SPRING_PROFILES_ACTIVE: docker
+    build: ./identity
     ports:
       - "8081:8081"
-    depends_on:
-      postgres-identity:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - eop-backend
 
-  # ----------------------------------------------------------
-  # BACKEND: Core Finance Service (Port 8082)
-  # ----------------------------------------------------------
   core:
-    build:
-      context: ./core
-      dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-eop}/core:latest
-    container_name: eop-core-finance
-    restart: unless-stopped
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-finance:5432/eop_finance_db
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-rechyone}
-      SPRING_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-rechYone}:${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}@mongodb:27017/eop_transaction_log?authSource=admin
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-guest}
-      SPRING_PROFILES_ACTIVE: docker
+    build: ./core
     ports:
       - "8082:8082"
-    depends_on:
-      postgres-finance:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - eop-backend
 
-  # ----------------------------------------------------------
-  # BACKEND: Support & Oracle Service (Port 8083)
-  # ----------------------------------------------------------
   oracle:
-    build:
-      context: ./oracle
-      dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-eop}/oracle:latest
-    container_name: eop-oracle-support
-    restart: unless-stopped
-    environment:
-      SPRING_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-rechYone}:${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}@mongodb:27017/eop_support_db?authSource=admin
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-guest}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}
-      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
-      EOP_ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@eop.priestess.com}
-      SPRING_PROFILES_ACTIVE: docker
+    build: ./oracle
     ports:
       - "8083:8083"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - eop-backend
 
-  # ----------------------------------------------------------
-  # BACKEND: Gateway (Port 8080) — Single Entry Point
-  # ----------------------------------------------------------
   gateway:
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-eop}/gateway:latest
-    container_name: eop-gateway
-    restart: unless-stopped
-    environment:
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-guest}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-Priestess_EOP_UAS_Secret_Key_2025_Secure!}
-      SPRING_PROFILES_ACTIVE: docker
+    build: ./gateway
     ports:
       - "8080:8080"
-    depends_on:
-      - identity
-      - core
-      - oracle
-      - redis
-    networks:
-      - eop-backend
-      - eop-frontend
 
-  # ----------------------------------------------------------
-  # FRONTEND: Angular (Port 80) served by Nginx
-  # ----------------------------------------------------------
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-eop}/frontend:latest
-    container_name: eop-frontend
-    restart: unless-stopped
+    build: ./frontend
     ports:
       - "80:80"
-    depends_on:
-      - gateway
-    networks:
-      - eop-frontend

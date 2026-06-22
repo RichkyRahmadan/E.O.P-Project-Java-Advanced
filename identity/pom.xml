@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.6</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.priestess</groupId>
 	<artifactId>identity</artifactId>
@@ -68,8 +68,7 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 		<dependency>
-			<!-- RabbitMQ AMQP — Message Broker untuk Event-Driven Architecture -->
-			<!-- Sesuai rules-eop-priestess.md SECTION 2: WAJIB Message Broker -->
+
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>

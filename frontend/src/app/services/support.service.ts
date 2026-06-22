@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
 
 export interface AiAnalysis {
   category: string;
-  priority: string; // LOW, MEDIUM, HIGH
+  priority: string;
   sentiment: string;
   score: number;
   suggestedReply: string;
@@ -23,7 +23,7 @@ export interface ComplaintDocument {
   email: string;
   invoiceId: string;
   rawMessage: string;
-  status: string; // OPEN, IN_PROGRESS, RESOLVED
+  status: string;
   aiAnalysis?: AiAnalysis;
   createdAt: string;
 }

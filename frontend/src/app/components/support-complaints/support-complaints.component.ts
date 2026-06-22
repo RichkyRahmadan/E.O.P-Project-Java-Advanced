@@ -17,7 +17,6 @@ export class SupportComplaintsComponent implements OnInit {
   private supportService = inject(SupportService);
   private router = inject(Router);
 
-  // User details
   userRole = '';
   userId = '';
 
@@ -86,11 +85,11 @@ export class SupportComplaintsComponent implements OnInit {
     this.submitSuccess = null;
 
     this.supportService.submitComplaint(
-      this.complaintForm.invoiceId.trim(), 
+      this.complaintForm.invoiceId.trim(),
       this.complaintForm.rawMessage.trim()
     ).subscribe({
       next: (res) => {
-        this.submitSuccess = res.message || 'Keluhan berhasil dikirim. Gemini AI sedang menganalisis laporan Anda.';
+        this.submitSuccess = res.message || 'Keluhan berhasil dikirim. Fitur analisis Gemini AI masih dalam pengembangan.';
         this.complaintForm = { invoiceId: '', rawMessage: '' };
         this.loading = false;
         // Refresh list

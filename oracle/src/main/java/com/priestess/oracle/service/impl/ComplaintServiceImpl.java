@@ -13,19 +13,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * ComplaintServiceImpl — Implementasi logika bisnis manajemen pengaduan.
- *
- * <h2>Pola Asinkron (SECTION 8 blueprint)</h2>
- * <p>Metode {@link #submitComplaint} menggunakan pola "fire and forget":
- * <ol>
- *   <li>Simpan keluhan ke MongoDB dengan status {@code OPEN} — selesai dalam milidetik.</li>
- *   <li>Panggil {@link GeminiAiService#analyzeComplaint} yang sudah dianotasi {@code @Async}
- *       di implementasinya. Method ini langsung return tanpa menunggu analisis selesai.</li>
- *   <li>Service ini mengembalikan dokumen keluhan ke Controller → Controller kirim 202 ke klien.</li>
- * </ol>
- * Hasilnya: klien menerima respons hampir instan, analisis AI berjalan di background thread.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,8 +20,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     private final ComplaintRepository complaintRepository;
     private final GeminiAiService geminiAiService;
-
-
 
     @Override
     public ComplaintDocument getComplaintById(String complaintId) {

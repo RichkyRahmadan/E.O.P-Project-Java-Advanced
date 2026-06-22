@@ -8,13 +8,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Set API Gateway Base URL dynamically
   const hostname = window.location.hostname;
   const gatewayUrl = hostname === 'localhost' || hostname === '127.0.0.1'
     ? 'http://localhost:8080'
     : '';
   let apiReq = req;
-  
+
   if (req.url.startsWith('/api')) {
     apiReq = req.clone({
       url: `${gatewayUrl}${req.url}`

@@ -19,17 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * GatewayHeaderAuthFilter — Membaca header yang disuntikkan Gateway
- * dan mengisi SecurityContext agar request dianggap terotentikasi.
- *
- * <p>Header yang dibaca:
- * <ul>
- *   <li>{@code X-User-Id}          — UUID pengguna (principal)</li>
- *   <li>{@code X-User-Role}        — Role, contoh: {@code ROLE_USER}</li>
- *   <li>{@code X-User-Permissions} — Permissions dipisah koma</li>
- * </ul>
- */
 @Slf4j
 @Component
 public class GatewayHeaderAuthFilter extends OncePerRequestFilter {

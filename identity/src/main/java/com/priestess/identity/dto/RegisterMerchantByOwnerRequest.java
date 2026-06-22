@@ -7,17 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * RegisterMerchantByOwnerRequest — DTO untuk request body
- * {@code POST /api/identity/merchant/register}.
- *
- * <p>Digunakan oleh User yang sudah terverifikasi (ACTIVE) untuk mendaftarkan
- * akun merchant baru. Owner ID diambil dari klaim JWT (X-User-Id header dari Gateway),
- * sehingga tidak perlu menyertakan nomor telepon owner.
- *
- * <p>Field email dihapus intentionally — username dan password cukup sebagai
- * credential merchant. Email merchant = opsional dan tidak diperlukan.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

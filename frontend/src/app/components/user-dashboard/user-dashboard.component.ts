@@ -17,7 +17,6 @@ export class UserDashboardComponent implements OnInit {
   private financeService = inject(FinanceService);
   private router = inject(Router);
 
-  // User details
   userId = '';
   username = '';
   userRole = '';
@@ -77,7 +76,7 @@ export class UserDashboardComponent implements OnInit {
     this.username = this.authService.getUserId() ? 'User' : 'Guest'; // We will display general user greetings
     this.userRole = this.authService.getUserRole() || '';
     this.userStatus = this.authService.getUserStatus() || 'PENDING';
-    
+
     // Let's call getMyWallet to test connection and load wallet details
     this.loadWallet();
   }
@@ -103,12 +102,11 @@ export class UserDashboardComponent implements OnInit {
     this.transferError = null;
     this.transferSuccess = null;
 
-    // Resolve username/email to userId
     this.authService.resolveUser(this.transferData.recipient).subscribe({
       next: (res) => {
         this.financeService.transfer(
-          res.userId, 
-          this.transferData.amount, 
+          res.userId,
+          this.transferData.amount,
           this.transferData.note
         ).subscribe({
           next: (transferRes) => {

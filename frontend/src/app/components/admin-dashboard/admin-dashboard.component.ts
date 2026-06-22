@@ -17,7 +17,6 @@ export class AdminDashboardComponent implements OnInit {
   private router = inject(Router);
   private http = inject(HttpClient);
 
-  // Admin details
   userId = '';
   username = '';
   userRole = '';

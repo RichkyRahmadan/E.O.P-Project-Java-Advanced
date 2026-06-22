@@ -20,7 +20,6 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
   private financeService = inject(FinanceService);
   private router = inject(Router);
 
-  // Merchant details
   userId = '';
   username = '';
   userRole = '';
@@ -101,7 +100,7 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
         this.generatedInvoice = res;
         this.qrisLoading = false;
         this.qrisForm = { amount: 0, note: '' };
-        
+
         // Start polling the invoice status
         this.startPolling(res.invoiceId);
       },

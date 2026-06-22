@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/** DTO untuk request Transfer P2P — {@code POST /api/finance/transfer}. */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class TransferRequest {
 

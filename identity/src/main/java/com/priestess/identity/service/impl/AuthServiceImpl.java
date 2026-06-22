@@ -33,13 +33,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * AuthServiceImpl — Implementasi lengkap kontrak {@link AuthService}.
- *
- * <p>
- * Mengorkestrasi seluruh alur autentikasi: login, refresh token, registrasi
- * user/merchant, dan logout berdasarkan Dual-Token Flow SECTION 6 blueprint.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -54,10 +47,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
     private final IdentityEventProducer identityEventProducer;
-
-    // =========================================================================
-    // LOGIN
-    // =========================================================================
 
     @Override
     @Transactional
@@ -83,25 +72,18 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponseAndSaveToken(user);
     }
 
-    // =========================================================================
-    // REFRESH TOKEN (SECTION 6 — Mitigasi Suspend)
-    // =========================================================================
-
     @Override
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
         log.info("[AuthService] Memproses refresh token.");
 
-        // Cari user berdasarkan refresh token yang disimpan di DB
         UserEntity user = userRepository.findByRefreshToken(request.getRefreshToken())
                 .orElseThrow(() -> new IllegalStateException(
                         "Refresh token tidak valid atau sudah kedaluwarsa. Silakan login kembali."));
 
-        // SECTION 6: Cek status saat ini — jika SUSPENDED/PENDING, tolak penerbitan
-        // token baru.
         if ("SUSPENDED".equalsIgnoreCase(user.getStatus())) {
             log.warn("[AuthService] Refresh ditolak — akun SUSPENDED: {}", user.getUsername());
-            // Hapus refresh token agar tidak bisa dicoba lagi
+
             user.setRefreshToken(null);
             userRepository.save(user);
             throw new IllegalStateException("Akun Anda telah dibekukan!");
@@ -109,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
 
         if ("PENDING".equalsIgnoreCase(user.getStatus())) {
             log.warn("[AuthService] Refresh ditolak — akun PENDING: {}", user.getUsername());
-            // Hapus refresh token
+
             user.setRefreshToken(null);
             userRepository.save(user);
             throw new IllegalStateException("Akun Anda belum aktif! Silakan tunggu verifikasi admin.");
@@ -118,10 +100,6 @@ public class AuthServiceImpl implements AuthService {
         log.debug("[AuthService] Refresh token valid untuk userId={}", user.getId());
         return buildAuthResponseAndSaveToken(user);
     }
-
-    // =========================================================================
-    // REGISTER USER
-    // =========================================================================
 
     @Override
     @Transactional
@@ -154,10 +132,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    // =========================================================================
-    // REGISTER MERCHANT
-    // =========================================================================
-
     @Override
     @Transactional
     public RegisterResponse registerMerchant(RegisterMerchantRequest request) {
@@ -165,7 +139,6 @@ public class AuthServiceImpl implements AuthService {
 
         validateUniqueCredentials(request.getUsername(), request.getEmail(), null);
 
-        // Cari owner berdasarkan nomor telepon
         UserEntity ownerUser = userRepository.findByPhone(request.getOwnerPhoneNumber())
                 .orElseThrow(() -> new IllegalArgumentException("Nomor telepon owner tidak ditemukan di sistem."));
 
@@ -177,7 +150,6 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Role ROLE_MERCHANT tidak ditemukan. Pastikan data seed sudah dijalankan."));
 
-        // Simpan akun user terlebih dahulu
         UserEntity newUser = UserEntity.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -188,7 +160,6 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newUser);
 
-        // Buat entitas Merchant yang terhubung ke user ini
         MerchantEntity merchant = MerchantEntity.builder()
                 .user(newUser)
                 .merchantName(request.getMerchantName())
@@ -201,7 +172,6 @@ public class AuthServiceImpl implements AuthService {
         log.info("[AuthService] Merchant baru berhasil didaftarkan: {} (User: {})",
                 merchant.getMerchantName(), newUser.getUsername());
 
-        // Publish event ke RabbitMQ
         try {
             identityEventProducer.publishMerchantRegistered(
                     newUser.getId().toString(),
@@ -222,16 +192,11 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    // =========================================================================
-    // REGISTER MERCHANT BY OWNER (dari User Dashboard)
-    // =========================================================================
-
     @Override
     @Transactional
     public RegisterResponse registerMerchantByOwner(String ownerUserId, RegisterMerchantByOwnerRequest request) {
         log.info("[AuthService] Owner {} mendaftarkan merchant baru: {}", ownerUserId, request.getUsername());
 
-        // Cari user owner berdasarkan UUID dari JWT
         UserEntity ownerUser = userRepository.findById(java.util.UUID.fromString(ownerUserId))
                 .orElseThrow(() -> new IllegalArgumentException("Data owner tidak ditemukan."));
 
@@ -239,7 +204,6 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Hanya akun yang sudah terverifikasi (ACTIVE) yang dapat mendaftarkan merchant.");
         }
 
-        // Validasi keunikan username merchant
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalStateException("Username '" + request.getUsername() + "' sudah terdaftar.");
         }
@@ -248,10 +212,9 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Role ROLE_MERCHANT tidak ditemukan. Pastikan data seed sudah dijalankan."));
 
-        // Buat akun user merchant
         UserEntity newMerchantUser = UserEntity.builder()
                 .username(request.getUsername())
-                .email(request.getUsername() + "@merchant.eop") // Email placeholder agar kolom not-null terpenuhi
+                .email(request.getUsername() + "@merchant.eop")
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(roleMerchant)
                 .status("PENDING")
@@ -259,7 +222,6 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newMerchantUser);
 
-        // Buat entitas Merchant yang terhubung ke akun merchant dan owner
         MerchantEntity merchant = MerchantEntity.builder()
                 .user(newMerchantUser)
                 .merchantName(request.getMerchantName())
@@ -272,7 +234,6 @@ public class AuthServiceImpl implements AuthService {
         log.info("[AuthService] Merchant '{}' berhasil didaftarkan oleh owner '{}'.",
                 merchant.getMerchantName(), ownerUser.getUsername());
 
-        // Publish event ke RabbitMQ agar Core Finance membuat wallet dan mapping
         try {
             identityEventProducer.publishMerchantRegistered(
                     newMerchantUser.getId().toString(),
@@ -293,10 +254,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    // =========================================================================
-    // LOGOUT
-    // =========================================================================
-
     @Override
     @Transactional
     public void logout(String refreshToken) {
@@ -306,7 +263,6 @@ public class AuthServiceImpl implements AuthService {
             user.setRefreshToken(null);
             userRepository.save(user);
 
-            // Hapus semua sesi user dari Redis
             String userSessionsKey = "user:sessions:" + user.getId().toString();
             try {
                 Set<String> activeTokens = redisTemplate.opsForSet().members(userSessionsKey);
@@ -340,16 +296,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-
-    /**
-     * Membangun {@link AuthResponse} dan menyimpan Refresh Token baru ke DB serta
-     * sesi ke Redis.
-     * Dipanggil bersama oleh login(), refresh(), registerUser(),
-     * registerMerchant().
-     */
     private AuthResponse buildAuthResponseAndSaveToken(UserEntity user) {
         List<String> permissions = rolePermissionRepository
                 .findAllByRole(user.getRole())
@@ -365,7 +311,6 @@ public class AuthServiceImpl implements AuthService {
         user.setRefreshToken(refreshToken);
         userRepository.save(user);
 
-        // Simpan sesi ke Redis menggunakan format delimit string (menghindari penggunaan ObjectMapper)
         String sessionValue = String.format("%s:::%s:::%s:::%s:::%s:::%s",
                 user.getId().toString(),
                 user.getUsername() != null ? user.getUsername() : "",
@@ -375,13 +320,12 @@ public class AuthServiceImpl implements AuthService {
                 String.join(",", permissions));
 
         try {
-            // Simpan session dengan TTL 15 menit
+
             redisTemplate.opsForValue().set("session:" + accessToken, sessionValue, 15, TimeUnit.MINUTES);
 
-            // Simpan track session token per userId
             String userSessionsKey = "user:sessions:" + user.getId().toString();
             redisTemplate.opsForSet().add(userSessionsKey, accessToken);
-            redisTemplate.expire(userSessionsKey, 24, TimeUnit.HOURS); // Cleanup set setelah 24 jam
+            redisTemplate.expire(userSessionsKey, 24, TimeUnit.HOURS);
             log.info("[AuthService] Berhasil menyimpan session di Redis untuk userId={}", user.getId());
         } catch (Exception e) {
             log.error("[AuthService] Gagal menyimpan session ke Redis: {}", e.getMessage(), e);
@@ -399,10 +343,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    /**
-     * Memvalidasi bahwa username, email, dan phone belum terdaftar.
-     * Melempar {@link IllegalStateException} jika sudah ada.
-     */
     private void validateUniqueCredentials(String username, String email, String phone) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalStateException("Username '" + username + "' sudah terdaftar.");

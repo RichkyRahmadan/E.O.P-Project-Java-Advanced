@@ -10,7 +10,7 @@ spring.application.name=eop-oracle-support
 spring.data.mongodb.uri=mongodb://localhost:27017/eop_support_db
 
 # =============================================================================
-# GOOGLE GEMINI AI API
+# GOOGLE GEMINI AI API (Under Development)
 # Dapatkan API Key dari: https://aistudio.google.com/app/apikey
 # =============================================================================
 gemini.api.key=YOUR_GEMINI_API_KEY_HERE

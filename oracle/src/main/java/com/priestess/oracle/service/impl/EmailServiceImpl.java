@@ -11,22 +11,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-/**
- * EmailServiceImpl — Implementasi pengiriman email notifikasi via JavaMailSender (JSM).
- *
- * <p>Mengirim email format HTML ke alamat Admin yang dikonfigurasi di
- * {@code eop.admin.email} dalam {@code application.properties}.
- *
- * <h2>Template Email</h2>
- * <p>Email HTML menampilkan:
- * <ul>
- *   <li>Header berwarna merah (HIGH priority warning)</li>
- *   <li>Informasi pelapor (username, email)</li>
- *   <li>Hasil analisis AI (kategori, prioritas, sentimen, skor)</li>
- *   <li>Kutipan teks keluhan mentah</li>
- *   <li>Saran balasan dari AI</li>
- * </ul>
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,29 +29,19 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setTo(adminEmail);
             helper.setSubject("⚠️ [E.O.P ALERT] Keluhan Prioritas HIGH — " + complaint.getComplaintId());
-            helper.setText(buildHtmlBody(complaint), true); // true = HTML content
+            helper.setText(buildHtmlBody(complaint), true);
 
             mailSender.send(message);
             log.info("[EmailService] Email notifikasi HIGH priority terkirim ke {} untuk complaintId={}",
                     adminEmail, complaint.getComplaintId());
 
         } catch (MessagingException e) {
-            // Email gagal terkirim tidak boleh menghentikan alur utama
+
             log.error("[EmailService] Gagal mengirim email untuk complaintId={}: {}",
                     complaint.getComplaintId(), e.getMessage(), e);
         }
     }
 
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-
-    /**
-     * Membangun konten HTML email notifikasi.
-     *
-     * @param complaint dokumen keluhan yang sudah dianalisis AI
-     * @return string HTML lengkap
-     */
     private String buildHtmlBody(ComplaintDocument complaint) {
         ComplaintDocument.AiAnalysis ai = complaint.getAiAnalysis();
         String suggestedReply = (ai != null && ai.getSuggestedReply() != null)
@@ -154,7 +128,7 @@ public class EmailServiceImpl implements EmailService {
                       </div>
 
                       <div class="reply-box">
-                        <h3>🤖 Saran Balasan dari Gemini AI</h3>
+                        <h3>🤖 Saran Balasan dari Gemini AI (Under Development)</h3>
                         <p>%s</p>
                       </div>
                     </div>

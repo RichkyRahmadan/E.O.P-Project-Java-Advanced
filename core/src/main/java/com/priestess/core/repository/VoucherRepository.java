@@ -8,46 +8,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * VoucherRepository — Repository JPA untuk entitas {@link VoucherEntity}.
- *
- * <p>Menyediakan operasi database untuk tabel {@code vouchers} di PostgreSQL.
- * Method query kustom di sini dirancang untuk mendukung alur klaim voucher
- * yang aman: cek ketersediaan → update status dalam satu transaksi atomik.
- */
 @Repository
 public interface VoucherRepository extends JpaRepository<VoucherEntity, Long> {
 
-    /**
-     * Mencari voucher yang belum diklaim berdasarkan kode.
-     *
-     * <p>Query ini mengembalikan {@code Optional.empty()} jika kode tidak ada
-     * ATAU jika voucher sudah pernah diklaim ({@code is_redeemed = true}).
-     * Ini menyederhanakan logika di Service — cukup satu {@code orElseThrow}.
-     *
-     * @param code kode voucher yang diinput pengguna
-     * @return {@link Optional} berisi voucher yang valid dan belum diklaim
-     */
     @Query("SELECT v FROM VoucherEntity v WHERE v.code = :code AND v.isRedeemed = false")
     Optional<VoucherEntity> findAvailableByCode(@Param("code") String code);
 
-    /**
-     * Menghitung jumlah voucher berdasarkan status redemption.
-     *
-     * <p>Digunakan oleh {@link com.priestess.core.scheduler.VoucherScheduler}
-     * untuk pemantauan stok voucher secara berkala via {@code @Scheduled}.
-     *
-     * @param isRedeemed {@code false} untuk voucher tersedia, {@code true} untuk yang sudah diklaim
-     * @return jumlah voucher dengan status yang sesuai
-     */
     long countByIsRedeemed(boolean isRedeemed);
 
-    /**
-     * Memeriksa apakah sebuah kode voucher valid (ada di database).
-     * Tidak memeriksa status redemption.
-     *
-     * @param code kode voucher
-     * @return {@code true} jika kode ditemukan
-     */
     boolean existsByCode(String code);
 }

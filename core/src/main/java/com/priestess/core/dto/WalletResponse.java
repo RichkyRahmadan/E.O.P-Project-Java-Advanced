@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/** DTO response untuk data dompet pengguna. */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class WalletResponse {
     private UUID        id;

@@ -28,23 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * ComplaintExcelController — Endpoint untuk export data pengaduan ke Excel.
- *
- * <p>Mengimplementasikan fitur <b>Export Excel</b> sesuai coding-style.md Section 8
- * (Fitur Pengolahan File) menggunakan library <b>Apache POI</b>. Admin dapat
- * mengunduh laporan pengaduan dalam format .xlsx untuk analisis lebih lanjut.
- *
- * <h2>Endpoints</h2>
- * <pre>
- *   GET /api/support/export/complaints                  — Export semua keluhan
- *   GET /api/support/export/complaints?status=OPEN      — Export keluhan by status
- *   GET /api/support/export/complaints/template         — Download template header
- * </pre>
- *
- * <p>Sesuai blueprint SECTION 4: user ID diambil dari header {@code X-User-Id}
- * yang disuntikkan Gateway. Controller ini tidak membaca JWT secara langsung.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/support/export")
@@ -56,25 +39,6 @@ public class ComplaintExcelController {
 
     private final ComplaintRepository complaintRepository;
 
-    // =========================================================================
-    // GET /api/support/export/complaints — Export keluhan (opsional: filter status)
-    // =========================================================================
-
-    /**
-     * Export data pengaduan pengguna ke file Excel (.xlsx).
-     *
-     * <p>Jika parameter {@code status} disertakan, hanya keluhan dengan status
-     * tersebut yang diekspor. Jika tidak ada, semua keluhan diekspor.
-     *
-     * <p>Sesuai coding-style.md Section 8: "Mengambil list data dari database,
-     * membuat instance Workbook baru secara dinamis, mengonstruksi baris header,
-     * mengisi sel demi sel dengan data entitas, mengonfigurasi tipe konten HTTP
-     * sebagai spreadsheet, dan mengalirkannya ke response output stream."
-     *
-     * @param userId user ID dari header X-User-Id (disuntikkan Gateway)
-     * @param status opsional — filter berdasarkan status keluhan (OPEN/IN_PROGRESS/RESOLVED)
-     * @return file Excel berisi data keluhan
-     */
     @GetMapping("/complaints")
     public ResponseEntity<byte[]> exportComplaints(
             @RequestHeader("X-User-Id") String userId,
@@ -86,9 +50,6 @@ public class ComplaintExcelController {
 
             Sheet sheet = workbook.createSheet("Laporan Pengaduan");
 
-            // -----------------------------------------------------------------
-            // BARIS HEADER
-            // -----------------------------------------------------------------
             CellStyle headerStyle = createHeaderStyle(workbook);
             Row headerRow = sheet.createRow(0);
             String[] columns = {
@@ -104,9 +65,6 @@ public class ComplaintExcelController {
                 sheet.setColumnWidth(i, 7000);
             }
 
-            // -----------------------------------------------------------------
-            // AMBIL DATA — filter berdasarkan status jika disertakan
-            // -----------------------------------------------------------------
             List<ComplaintDocument> complaints;
             if (status != null && !status.isBlank()) {
                 complaints = complaintRepository.findByStatusOrderByCreatedAtDesc(status.toUpperCase());
@@ -117,9 +75,6 @@ public class ComplaintExcelController {
                 log.info("[ComplaintExcelController] Export semua keluhan: {} data", complaints.size());
             }
 
-            // -----------------------------------------------------------------
-            // BARIS DATA — looping dokumen keluhan dari MongoDB
-            // -----------------------------------------------------------------
             int rowNum = 1;
             for (ComplaintDocument doc : complaints) {
                 Row row = sheet.createRow(rowNum++);
@@ -132,7 +87,6 @@ public class ComplaintExcelController {
                 row.createCell(5).setCellValue(doc.getRawMessage() != null ? doc.getRawMessage() : "-");
                 row.createCell(6).setCellValue(doc.getStatus() != null ? doc.getStatus() : "-");
 
-                // Kolom analisis AI (bisa null jika analisis belum selesai)
                 if (doc.getAiAnalysis() != null) {
                     row.createCell(7).setCellValue(
                             doc.getAiAnalysis().getCategory() != null ? doc.getAiAnalysis().getCategory() : "-");
@@ -156,9 +110,6 @@ public class ComplaintExcelController {
                         doc.getCreatedAt() != null ? doc.getCreatedAt().format(FORMATTER) : "-");
             }
 
-            // -----------------------------------------------------------------
-            // STREAMING KE RESPONSE
-            // -----------------------------------------------------------------
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
             byte[] excelBytes = out.toByteArray();
@@ -181,19 +132,6 @@ public class ComplaintExcelController {
         }
     }
 
-    // =========================================================================
-    // GET /api/support/export/complaints/template — Download template kosong
-    // =========================================================================
-
-    /**
-     * Download file template Excel kosong yang hanya berisi struktur header kolom.
-     *
-     * <p>Sesuai coding-style.md Section 8: "Sediakan endpoint khusus untuk
-     * mendownload file template kosong yang hanya berisi struktur header kolom
-     * yang valid agar meminimalisir kesalahan format saat user melakukan import."
-     *
-     * @return file Excel dengan header kolom saja
-     */
     @GetMapping("/complaints/template")
     public ResponseEntity<byte[]> downloadTemplate() {
         log.info("[ComplaintExcelController] GET /api/support/export/complaints/template");
@@ -217,7 +155,6 @@ public class ComplaintExcelController {
                 sheet.setColumnWidth(i, 7000);
             }
 
-            // Baris contoh
             Row exampleRow = sheet.createRow(1);
             exampleRow.createCell(0).setCellValue("complaint-uuid");
             exampleRow.createCell(1).setCellValue("user-uuid");
@@ -252,17 +189,6 @@ public class ComplaintExcelController {
         }
     }
 
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-
-    /**
-     * Membuat {@link CellStyle} untuk baris header dengan background ungu gelap
-     * dan teks putih tebal — konsisten dengan tema warna E.O.P Oracle Service.
-     *
-     * @param workbook Workbook yang sedang dibangun
-     * @return CellStyle yang sudah dikonfigurasi untuk baris header
-     */
     private CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setFillForegroundColor(IndexedColors.VIOLET.getIndex());

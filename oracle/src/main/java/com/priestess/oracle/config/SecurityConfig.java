@@ -11,13 +11,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * SecurityConfig — Konfigurasi Spring Security untuk Oracle Support Service.
- *
- * <p>Pola "trust the gateway": sama persis dengan Core Finance Service.
- * Semua autentikasi JWT sudah dilakukan Gateway. Service ini hanya membaca
- * header {@code X-User-Id} untuk mengetahui identitas pengguna.
- */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -32,7 +25,7 @@ public class SecurityConfig {
             .cors(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Semua endpoint keluhan wajib terautentikasi
+
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

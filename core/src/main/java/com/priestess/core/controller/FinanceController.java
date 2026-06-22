@@ -21,15 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * FinanceController — Seluruh endpoint Core Finance Service ({@code /api/finance}).
- *
- * <p>User ID diambil dari header {@code X-User-Id} yang disuntikkan oleh
- * E.O.P Gateway setelah JWT divalidasi. Controller tidak pernah membaca
- * atau memvalidasi JWT secara langsung — itu tugas Gateway.
- *
- * <p>Zero business logic — semua didelegasikan ke {@link FinanceService}.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/finance")
@@ -38,14 +29,6 @@ public class FinanceController {
 
     private final FinanceService financeService;
 
-    // =========================================================================
-    // GET /api/finance/wallet
-    // =========================================================================
-
-    /**
-     * Ambil data dompet milik pengguna yang sedang login.
-     * Header {@code X-User-Id} diisi oleh Gateway dari klaim JWT {@code sub}.
-     */
     @GetMapping("/wallet")
     public ResponseEntity<WalletResponse> getMyWallet(
             @RequestHeader("X-User-Id") String userId,
@@ -54,14 +37,6 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.getMyWallet(UUID.fromString(userId), role));
     }
 
-    // =========================================================================
-    // POST /api/finance/transfer
-    // =========================================================================
-
-    /**
-     * Transfer P2P — Debit saldo sender, kredit saldo recipient.
-     * Menerapkan pola Dual-Write SECTION 7 (PENDING → SUCCESS/FAILED).
-     */
     @PostMapping("/transfer")
     public ResponseEntity<TransactionResponse> transfer(
             @RequestHeader("X-User-Id") String userId,
@@ -73,17 +48,6 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.transfer(UUID.fromString(userId), role, request));
     }
 
-    // =========================================================================
-    // POST /api/finance/transfer/to-owner
-    // =========================================================================
-
-    /**
-     * Transfer dari dompet Merchant ke dompet Owner secara otomatis.
-     *
-     * <p>Owner diidentifikasi dari mapping data di database — merchant tidak
-     * perlu menginput nomor/username owner secara manual. Request body hanya
-     * berisi {@code amount} dan {@code note}.
-     */
     @PostMapping("/transfer/to-owner")
     public ResponseEntity<TransactionResponse> transferToOwner(
             @RequestHeader("X-User-Id") String merchantId,
@@ -96,14 +60,6 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.transferToOwner(UUID.fromString(merchantId), amount, note));
     }
 
-    // =========================================================================
-    // POST /api/finance/qris/generate
-    // =========================================================================
-
-    /**
-     * Generate invoice QRIS dinamis — buat transaksi PENDING untuk merchant.
-     * Angular Merchant Dashboard akan polling status invoice ini setiap 3-5 detik.
-     */
     @PostMapping("/qris/generate")
     public ResponseEntity<TransactionResponse> generateQris(
             @RequestHeader("X-User-Id") String merchantId,
@@ -114,14 +70,6 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.generateQris(UUID.fromString(merchantId), request));
     }
 
-    // =========================================================================
-    // POST /api/finance/qris/pay
-    // =========================================================================
-
-    /**
-     * Bayar QRIS — Eksekusi pembayaran invoice yang sudah di-generate.
-     * Mengubah status MongoDB dari PENDING menjadi SUCCESS (atau FAILED).
-     */
     @PostMapping("/qris/pay")
     public ResponseEntity<TransactionResponse> payQris(
             @RequestHeader("X-User-Id") String buyerId,
@@ -133,13 +81,6 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.payQris(UUID.fromString(buyerId), request));
     }
 
-    // =========================================================================
-    // POST /api/finance/voucher/redeem
-    // =========================================================================
-
-    /**
-     * Klaim Voucher — Validasi kode, tambah saldo wallet, tandai voucher sebagai digunakan.
-     */
     @PostMapping("/voucher/redeem")
     public ResponseEntity<TransactionResponse> redeemVoucher(
             @RequestHeader("X-User-Id") String userId,
@@ -157,17 +98,6 @@ public class FinanceController {
         }
     }
 
-    // =========================================================================
-    // GET /api/finance/transactions/{invoiceId}
-    // =========================================================================
-
-    /**
-     * Cek status transaksi — Endpoint untuk polling status invoice oleh Angular.
-     *
-     * <p>Sesuai SECTION 8 blueprint: Angular menggunakan {@code RxJS interval}
-     * untuk memanggil endpoint ini setiap 3-5 detik. Begitu status berubah
-     * menjadi {@code SUCCESS}, polling berhenti dan layar diperbarui.
-     */
     @GetMapping("/transactions/{invoiceId}")
     public ResponseEntity<TransactionResponse> getTransactionStatus(
             @PathVariable String invoiceId) {

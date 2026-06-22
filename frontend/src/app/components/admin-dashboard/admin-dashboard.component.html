@@ -1,8 +1,7 @@
 <div class="min-h-screen bg-canvas-dark text-on-dark font-sans flex flex-col md:flex-row">
 
-  <!-- Sidebar Navigation -->
   <aside class="w-full md:w-64 bg-canvas-dark border-b md:border-b-0 md:border-r border-hairline-dark flex flex-col flex-shrink-0">
-    <!-- Brand / Logo -->
+
     <div class="p-6 border-b border-hairline-dark flex items-center gap-3">
       <div class="p-2 bg-primary/10 rounded-md border border-primary/20">
         <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -19,7 +18,6 @@
       </div>
     </div>
 
-    <!-- Active Administrator Info -->
     <div class="px-6 py-4 border-b border-hairline-dark bg-surface-elevated/40">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -38,10 +36,9 @@
       </div>
     </div>
 
-    <!-- Nav Links -->
     <nav class="flex-1 px-4 py-6 space-y-1.5">
-      <button 
-        (click)="setView('dashboard')" 
+      <button
+        (click)="setView('dashboard')"
         [ngClass]="activeView === 'dashboard' ? 'bg-primary/10 text-on-dark border-primary/20' : 'border-transparent text-stone hover:text-on-dark hover:bg-white/5'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-md border transition-all duration-200 text-sm font-medium cursor-pointer">
         <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -53,8 +50,8 @@
         <span>Dashboard</span>
       </button>
 
-      <button 
-        (click)="setView('verify-kyc')" 
+      <button
+        (click)="setView('verify-kyc')"
         [ngClass]="activeView === 'verify-kyc' ? 'bg-primary/10 text-on-dark border-primary/20' : 'border-transparent text-stone hover:text-on-dark hover:bg-white/5'"
         class="w-full flex items-center justify-between px-4 py-3 rounded-md border transition-all duration-200 text-sm font-medium cursor-pointer">
         <div class="flex items-center gap-3">
@@ -68,8 +65,8 @@
         </span>
       </button>
 
-      <button 
-        (click)="setView('verify-merchant')" 
+      <button
+        (click)="setView('verify-merchant')"
         [ngClass]="activeView === 'verify-merchant' ? 'bg-primary/10 text-on-dark border-primary/20' : 'border-transparent text-stone hover:text-on-dark hover:bg-white/5'"
         class="w-full flex items-center justify-between px-4 py-3 rounded-md border transition-all duration-200 text-sm font-medium cursor-pointer">
         <div class="flex items-center gap-3">
@@ -84,8 +81,8 @@
         </span>
       </button>
 
-      <button 
-        (click)="setView('suspend-user')" 
+      <button
+        (click)="setView('suspend-user')"
         [ngClass]="activeView === 'suspend-user' ? 'bg-primary/10 text-on-dark border-primary/20' : 'border-transparent text-stone hover:text-on-dark hover:bg-white/5'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-md border transition-all duration-200 text-sm font-medium cursor-pointer">
         <svg class="w-5 h-5 text-accent-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -95,8 +92,8 @@
         <span>Suspend User</span>
       </button>
 
-      <button 
-        (click)="setView('manual-verify')" 
+      <button
+        (click)="setView('manual-verify')"
         [ngClass]="activeView === 'manual-verify' ? 'bg-primary/10 text-on-dark border-primary/20' : 'border-transparent text-stone hover:text-on-dark hover:bg-white/5'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-md border transition-all duration-200 text-sm font-medium cursor-pointer">
         <svg class="w-5 h-5 text-accent-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -106,20 +103,19 @@
         <span>Cari UUID</span>
       </button>
 
-      <a 
-        routerLink="/support" 
+      <a
+        routerLink="/support"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-md border border-transparent text-stone hover:text-on-dark hover:bg-white/5 transition-all duration-200 text-sm font-medium no-underline">
         <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
-        <span>Aduan Gemini</span>
+        <span>Aduan Gemini <span class="text-[10px] text-accent-yellow">(Dev)</span></span>
       </a>
     </nav>
 
-    <!-- Logout Area -->
     <div class="p-4 border-t border-hairline-dark">
-      <button 
-        (click)="onLogout()" 
+      <button
+        (click)="onLogout()"
         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent-danger/10 hover:bg-accent-danger/20 text-accent-danger rounded-full border border-accent-danger/20 hover:border-accent-danger/30 font-medium transition-all duration-200 text-sm cursor-pointer">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -131,10 +127,8 @@
     </div>
   </aside>
 
-  <!-- Main Content Area -->
   <main class="flex-1 overflow-y-auto bg-canvas-dark">
 
-    <!-- Top Header -->
     <header class="px-8 py-5 bg-canvas-dark border-b border-hairline-dark flex items-center justify-between">
       <div>
         <h2 class="text-lg font-bold text-on-dark tracking-wide">
@@ -150,21 +144,18 @@
         <p class="text-xs text-stone mt-0.5">Admin ID: <span class="font-mono text-on-dark font-semibold">{{ userId || 'N/A' }}</span></p>
       </div>
 
-      <!-- Quick Server Status -->
       <div class="flex items-center gap-2.5 px-3 py-1.5 bg-surface-elevated border border-hairline-dark rounded-md">
         <span class="w-2 h-2 rounded-full bg-accent-teal font-sans"></span>
         <span class="text-xs text-on-dark font-semibold tracking-wider uppercase font-mono">Gateway Online</span>
       </div>
     </header>
 
-    <!-- Main Container -->
     <div class="p-8">
 
-      <!-- ================= 1. DASHBOARD VIEW ================= -->
       <ng-container *ngIf="activeView === 'dashboard'">
-        <!-- Stats Cards Grid -->
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          
+
           <div class="relative overflow-hidden bg-surface-elevated border border-hairline-dark rounded-md p-6 flex flex-col justify-between">
             <div class="flex justify-between items-start">
               <div>
@@ -218,7 +209,6 @@
 
         </div>
 
-        <!-- Quick Access Actions Grid -->
         <h3 class="text-base font-bold text-on-dark mb-4 tracking-wide font-sans">Navigasi Cepat Administrasi</h3>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <button (click)="setView('verify-kyc')" class="p-4 bg-surface-elevated hover:bg-white/5 border border-hairline-dark rounded-md flex flex-col items-center justify-center text-center transition-all duration-200 group cursor-pointer">
@@ -266,12 +256,12 @@
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
-            <span class="text-xs font-semibold text-on-dark">Aduan Gemini</span>
+            <span class="text-xs font-semibold text-on-dark">Aduan Gemini <span class="text-[9px] text-accent-yellow">(Dev)</span></span>
           </a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- System Information -->
+
           <div class="bg-surface-elevated border border-hairline-dark rounded-md p-6">
             <div class="flex items-center gap-3 mb-6">
               <div class="p-2 bg-primary/10 rounded-md text-primary border border-primary/20">
@@ -306,7 +296,6 @@
             </div>
           </div>
 
-          <!-- Action Log Activity -->
           <div class="bg-surface-elevated border border-hairline-dark rounded-md p-6 flex flex-col">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
@@ -321,7 +310,7 @@
               </div>
               <span class="text-xs text-primary font-mono font-medium">Sesi Ini</span>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto max-h-[220px] pr-2 space-y-3" *ngIf="auditLogs.length > 0; else noAudit">
               <div *ngFor="let log of auditLogs" class="p-3 bg-canvas-dark border border-hairline-dark rounded-md flex items-center justify-between hover:border-hairline-dark transition-colors">
                 <div>
@@ -348,7 +337,6 @@
         </div>
       </ng-container>
 
-      <!-- ================= 2. VERIFY KYC VIEW ================= -->
       <ng-container *ngIf="activeView === 'verify-kyc'">
         <div class="mb-6">
           <button (click)="setView('dashboard')" class="inline-flex items-center text-sm text-primary hover:text-primary-bright font-semibold gap-1.5 transition-colors bg-transparent border-0 cursor-pointer">
@@ -366,7 +354,6 @@
             <p class="text-sm text-stone mt-1">Gunakan tabel ini untuk meninjau dan mengaktifkan status user dari PENDING menjadi ACTIVE secara langsung.</p>
           </div>
 
-          <!-- Alert System -->
           <div *ngIf="kycError" id="kyc-error" class="mb-5 p-4 bg-accent-danger/10 border border-accent-danger/30 text-accent-danger rounded-md text-sm font-medium">
             {{ kycError }}
           </div>
@@ -390,8 +377,8 @@
                   <td class="py-4 px-4 font-mono text-stone">{{ user.email }}</td>
                   <td class="py-4 px-4 text-stone">{{ user.createdAt | date:'medium' }}</td>
                   <td class="py-4 px-4 text-right">
-                    <button 
-                      (click)="verifyKycDirect(user.id)" 
+                    <button
+                      (click)="verifyKycDirect(user.id)"
                       class="px-4 py-1.5 bg-canvas-light hover:bg-faint text-canvas-dark rounded-full text-xs font-semibold transition-all duration-200 disabled:opacity-50 cursor-pointer border-0"
                       [disabled]="kycLoading">
                       Aktifkan Akun
@@ -415,7 +402,6 @@
         </div>
       </ng-container>
 
-      <!-- ================= 3. VERIFY MERCHANT VIEW ================= -->
       <ng-container *ngIf="activeView === 'verify-merchant'">
         <div class="mb-6">
           <button (click)="setView('dashboard')" class="inline-flex items-center text-sm text-primary hover:text-primary-bright font-semibold gap-1.5 transition-colors bg-transparent border-0 cursor-pointer">
@@ -433,7 +419,6 @@
             <p class="text-sm text-stone mt-1">Tinjau profil usaha toko di bawah ini untuk mengaktifkan status verifikasi bisnis mereka.</p>
           </div>
 
-          <!-- Alert System -->
           <div *ngIf="merchantError" id="merchant-error" class="mb-5 p-4 bg-accent-danger/10 border border-accent-danger/25 text-accent-danger rounded-md text-sm font-medium">
             {{ merchantError }}
           </div>
@@ -461,8 +446,8 @@
                   <td class="py-4 px-4 text-stone max-w-[200px] truncate">{{ merchant.address || 'Tidak ada alamat' }}</td>
                   <td class="py-4 px-4 text-stone">{{ merchant.createdAt | date:'medium' }}</td>
                   <td class="py-4 px-4 text-right">
-                    <button 
-                      (click)="verifyMerchantDirect(merchant.id)" 
+                    <button
+                      (click)="verifyMerchantDirect(merchant.id)"
                       class="px-4 py-1.5 bg-canvas-light hover:bg-faint text-canvas-dark rounded-full text-xs font-semibold transition-all duration-200 disabled:opacity-50 cursor-pointer border-0"
                       [disabled]="merchantLoading">
                       Verifikasi Toko
@@ -486,7 +471,6 @@
         </div>
       </ng-container>
 
-      <!-- ================= 4. SUSPEND USER VIEW ================= -->
       <ng-container *ngIf="activeView === 'suspend-user'">
         <div class="mb-6">
           <button (click)="setView('dashboard')" class="inline-flex items-center text-sm text-primary hover:text-primary-bright font-semibold gap-1.5 transition-colors bg-transparent border-0 cursor-pointer">
@@ -511,7 +495,6 @@
             <p class="text-sm text-stone mt-1">Hati-hati: Tindakan ini akan membekukan akun pengguna menjadi SUSPENDED. Pengguna akan secara instan didepak paksa dari semua sesi aktif.</p>
           </div>
 
-          <!-- Alert System -->
           <div *ngIf="suspendError" id="suspend-error" class="mb-5 p-4 bg-accent-danger/10 border border-accent-danger/25 text-accent-danger rounded-md text-sm font-medium">
             {{ suspendError }}
           </div>
@@ -522,20 +505,20 @@
           <form (ngSubmit)="onSuspendUser()" #suspendForm="ngForm" class="space-y-5">
             <div>
               <label for="targetUserIdSuspend" class="block text-xs font-semibold text-stone uppercase tracking-wider mb-2">User ID (UUID)</label>
-              <input 
-                type="text" 
-                id="targetUserIdSuspend" 
-                name="targetUserIdSuspend" 
-                [(ngModel)]="targetUserIdSuspend" 
-                placeholder="Contoh: 123e4567-e89b-12d3-a456-426614174000" 
+              <input
+                type="text"
+                id="targetUserIdSuspend"
+                name="targetUserIdSuspend"
+                [(ngModel)]="targetUserIdSuspend"
+                placeholder="Contoh: 123e4567-e89b-12d3-a456-426614174000"
                 required
                 class="w-full h-11 px-4 bg-canvas-dark border border-hairline-dark focus:border-accent-danger focus:ring-1 focus:ring-accent-danger rounded-md text-on-dark placeholder-ash outline-none transition-all text-xs font-mono">
             </div>
 
-            <button 
-              type="submit" 
-              id="btn-suspend-user" 
-              class="w-full h-12 bg-accent-danger hover:bg-accent-danger/80 text-white font-semibold rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-0 cursor-pointer" 
+            <button
+              type="submit"
+              id="btn-suspend-user"
+              class="w-full h-12 bg-accent-danger hover:bg-accent-danger/80 text-white font-semibold rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-0 cursor-pointer"
               [disabled]="suspendLoading || !suspendForm.valid">
               <span>{{ suspendLoading ? 'Sedang Memproses...' : 'Bekukan Akun Sekarang' }}</span>
             </button>
@@ -543,7 +526,6 @@
         </div>
       </ng-container>
 
-      <!-- ================= 5. MANUAL VERIFY VIEW ================= -->
       <ng-container *ngIf="activeView === 'manual-verify'">
         <div class="mb-6">
           <button (click)="setView('dashboard')" class="inline-flex items-center text-sm text-primary hover:text-primary-bright font-semibold gap-1.5 transition-colors bg-transparent border-0 cursor-pointer">
@@ -556,15 +538,13 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          <!-- Manual User Verification Card -->
+
           <div class="bg-surface-elevated border border-hairline-dark rounded-md p-6">
             <div class="mb-6">
               <h3 class="text-base font-bold text-on-dark tracking-wide">Pencarian & Verifikasi KYC User</h3>
               <p class="text-xs text-stone mt-1">Verifikasi KYC user berstatus pending dengan memasukkan ID UUID secara langsung.</p>
             </div>
 
-            <!-- Alerts -->
             <div *ngIf="kycError" class="mb-4 p-3 bg-accent-danger/10 border border-accent-danger/25 text-accent-danger rounded-md text-xs font-medium">
               {{ kycError }}
             </div>
@@ -575,32 +555,30 @@
             <form (ngSubmit)="onVerifyKyc()" #manualKycForm="ngForm" class="space-y-4">
               <div>
                 <label for="targetUserIdKyc" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">User ID (UUID)</label>
-                <input 
-                  type="text" 
-                  id="targetUserIdKyc" 
-                  name="targetUserIdKyc" 
-                  [(ngModel)]="targetUserIdKyc" 
-                  placeholder="Masukkan UUID User" 
+                <input
+                  type="text"
+                  id="targetUserIdKyc"
+                  name="targetUserIdKyc"
+                  [(ngModel)]="targetUserIdKyc"
+                  placeholder="Masukkan UUID User"
                   required
                   class="w-full h-11 px-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-xs font-mono">
               </div>
-              <button 
-                type="submit" 
-                class="w-full h-11 bg-canvas-light hover:bg-faint text-canvas-dark font-semibold rounded-full flex items-center justify-center transition-all duration-200 border-0 cursor-pointer" 
+              <button
+                type="submit"
+                class="w-full h-11 bg-canvas-light hover:bg-faint text-canvas-dark font-semibold rounded-full flex items-center justify-center transition-all duration-200 border-0 cursor-pointer"
                 [disabled]="kycLoading || !manualKycForm.valid">
                 Aktifkan User (UUID)
               </button>
             </form>
           </div>
 
-          <!-- Manual Merchant Verification Card -->
           <div class="bg-surface-elevated border border-hairline-dark rounded-md p-6">
             <div class="mb-6">
               <h3 class="text-base font-bold text-on-dark tracking-wide">Pencarian & Verifikasi Merchant</h3>
               <p class="text-xs text-stone mt-1">Verifikasi toko/merchant berstatus pending dengan memasukkan ID UUID secara langsung.</p>
             </div>
 
-            <!-- Alerts -->
             <div *ngIf="merchantError" class="mb-4 p-3 bg-accent-danger/10 border border-accent-danger/25 text-accent-danger rounded-md text-xs font-medium">
               {{ merchantError }}
             </div>
@@ -611,18 +589,18 @@
             <form (ngSubmit)="onVerifyMerchant()" #manualMerchantForm="ngForm" class="space-y-4">
               <div>
                 <label for="targetMerchantIdVerify" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">Merchant ID (UUID)</label>
-                <input 
-                  type="text" 
-                  id="targetMerchantIdVerify" 
-                  name="targetMerchantIdVerify" 
-                  [(ngModel)]="targetMerchantIdVerify" 
-                  placeholder="Masukkan UUID Merchant" 
+                <input
+                  type="text"
+                  id="targetMerchantIdVerify"
+                  name="targetMerchantIdVerify"
+                  [(ngModel)]="targetMerchantIdVerify"
+                  placeholder="Masukkan UUID Merchant"
                   required
                   class="w-full h-11 px-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-xs font-mono">
               </div>
-              <button 
-                type="submit" 
-                class="w-full h-11 bg-canvas-light hover:bg-faint text-canvas-dark font-semibold rounded-full flex items-center justify-center transition-all duration-200 border-0 cursor-pointer" 
+              <button
+                type="submit"
+                class="w-full h-11 bg-canvas-light hover:bg-faint text-canvas-dark font-semibold rounded-full flex items-center justify-center transition-all duration-200 border-0 cursor-pointer"
                 [disabled]="merchantLoading || !manualMerchantForm.valid">
                 Verifikasi Merchant (UUID)
               </button>

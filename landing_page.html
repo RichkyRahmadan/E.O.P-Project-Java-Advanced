@@ -6,10 +6,9 @@
 <title>E.O.P | Banking &amp; Beyond</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<!-- Material Symbols -->
+
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Mocking Aeonik Pro with a similar high-end geometric sans if not available locally, 
-         but using the requested name in font-family for CSS -->
+
 <link href="https://fonts.cdnfonts.com/css/aeonik" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
@@ -77,7 +76,7 @@
 <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, h4, .font-display { font-family: 'Aeonik', 'Aeonik Pro', 'Inter', sans-serif; }
-        
+
         .hero-title {
             font-size: clamp(48px, 8vw, 80px);
             line-height: 1.0;
@@ -87,12 +86,12 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .feature-card { 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        .feature-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 20px;
         }
         .feature-card:hover { transform: translateY(-4px); }
-        
+
         .pill-button {
             border-radius: 9999px;
             padding: 12px 28px;
@@ -102,7 +101,7 @@
     </style>
 </head>
 <body class="bg-background text-on-background selection:bg-primary/30">
-<!-- Global Nav (Dark) -->
+
 <nav class="fixed top-0 left-0 w-full z-50 bg-[#000000] h-20 flex items-center justify-between px-margin-desktop border-b border-white/5">
 <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
 <div class="font-display text-2xl font-bold text-white tracking-tight">E.O.P</div>
@@ -117,7 +116,7 @@
 </div>
 </nav>
 <main class="pt-20">
-<!-- Hero Section (Dark Canvas) -->
+
 <section class="bg-[#000000] text-white min-h-[90vh] flex flex-col items-center justify-center relative overflow-hidden px-margin-desktop py-20">
 <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center z-10">
 <div class="flex flex-col items-start gap-8">
@@ -132,14 +131,14 @@
 <img alt="E.O.P Digital Wallet UI" class="w-full max-w-[500px] object-contain drop-shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfHhNnntQSLl7lfsNuoU5mYrD7HuK5W8dL_O6CtshbGTB9fVnY5N64Gtl_W6wBYvdKei_B_dyWZSlhWFnM-AsyVCD3oGlrQMR0Ifm0ZxVR6KBM63gLmDC8Lgzk767OwRdJsVeQeJm52pNXsezFVfg_r8fb_VE7Dh7YOte6Zf0VDApnCyO59NQ9Dh8iCsfs0paylPwX0wk-NvViOQL03iTVRVaBr6yqby_Th9MZs9n3qk8kpJZsMw4SGW2-1JNMxczgPr4YSiDw8X0f"/>
 </div>
 </div>
-<!-- Subtle Cobalt Glow -->
+
 <div class="absolute -bottom-24 -right-24 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px]"></div>
 </section>
-<!-- Features Grid (Light Canvas) -->
+
 <section class="bg-[#ffffff] text-black py-32 px-margin-desktop">
 <div class="max-w-7xl mx-auto">
 <div class="grid md:grid-cols-3 gap-lg">
-<!-- Feature 1 -->
+
 <div class="feature-card p-xl border border-neutral-100 bg-neutral-50/50 flex flex-col gap-md">
 <div class="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-xl">
 <span class="material-symbols-outlined text-primary text-2xl">qr_code_2</span>
@@ -147,7 +146,7 @@
 <h3 class="font-headline text-2xl font-bold">Instant QRIS Payments</h3>
 <p class="font-body text-neutral-600 leading-relaxed">Seamlessly pay at millions of merchants worldwide with our ultra-fast QRIS integration. Zero lag, total convenience.</p>
 </div>
-<!-- Feature 2 -->
+
 <div class="feature-card p-xl border border-neutral-100 bg-neutral-50/50 flex flex-col gap-md">
 <div class="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-xl">
 <span class="material-symbols-outlined text-primary text-2xl">security</span>
@@ -155,7 +154,7 @@
 <h3 class="font-headline text-2xl font-bold">Stateless JWT Security</h3>
 <p class="font-body text-neutral-600 leading-relaxed">Advanced security protocols ensure your data is never stored unnecessarily. Secure, decentralized-inspired tokenization.</p>
 </div>
-<!-- Feature 3 -->
+
 <div class="feature-card p-xl border border-neutral-100 bg-neutral-50/50 flex flex-col gap-md">
 <div class="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-xl">
 <span class="material-symbols-outlined text-primary text-2xl">psychology</span>
@@ -166,7 +165,7 @@
 </div>
 </div>
 </section>
-<!-- Plans Grid (Dark Canvas) -->
+
 <section class="bg-[#000000] text-white py-32 px-margin-desktop relative">
 <div class="max-w-7xl mx-auto">
 <div class="mb-20 text-center">
@@ -174,7 +173,7 @@
 <p class="font-body text-lg text-neutral-400">Choose the tier that fuels your ambition.</p>
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
-<!-- Standard -->
+
 <div class="bg-[#16181a] p-10 rounded-[20px] flex flex-col h-full border border-white/5 hover:border-white/10 transition-all">
 <div class="mb-10">
 <h4 class="font-body text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-2">Basic</h4>
@@ -186,7 +185,7 @@
 <button class="w-full py-4 rounded-full bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10">Get Standard</button>
 </div>
 </div>
-<!-- Plus -->
+
 <div class="bg-[#16181a] p-10 rounded-[20px] flex flex-col h-full border border-white/5 hover:border-white/10 transition-all">
 <div class="mb-10">
 <h4 class="font-body text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-2">Advanced</h4>
@@ -198,7 +197,7 @@
 <button class="w-full py-4 rounded-full bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10">Get Plus</button>
 </div>
 </div>
-<!-- Premium -->
+
 <div class="bg-[#16181a] p-10 rounded-[20px] flex flex-col h-full border border-white/5 hover:border-white/10 transition-all">
 <div class="mb-10">
 <h4 class="font-body text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-2">Global</h4>
@@ -210,7 +209,7 @@
 <button class="w-full py-4 rounded-full bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10">Get Premium</button>
 </div>
 </div>
-<!-- Metal (Featured Cobalt Violet) -->
+
 <div class="bg-primary p-10 rounded-[20px] flex flex-col h-full shadow-2xl shadow-primary/20 relative overflow-hidden">
 <div class="mb-10">
 <h4 class="font-body text-xs font-bold text-white/70 uppercase tracking-[0.2em] mb-2">Elite</h4>
@@ -225,7 +224,7 @@
 </div>
 </div>
 </section>
-<!-- Dynamic Card Showcase Section (Light Canvas) -->
+
 <section class="bg-[#ffffff] py-32 px-margin-desktop">
 <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-xl">
 <div class="md:w-1/2">
@@ -258,7 +257,7 @@
 </div>
 </section>
 </main>
-<!-- Footer (Dark Canvas) -->
+
 <footer class="bg-[#000000] text-white border-t border-white/5">
 <div class="max-w-7xl mx-auto px-margin-desktop py-24 flex flex-col md:flex-row justify-between items-start gap-16">
 <div class="flex flex-col gap-6 max-w-sm">

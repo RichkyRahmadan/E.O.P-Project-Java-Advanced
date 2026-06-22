@@ -1,8 +1,7 @@
 <div class="min-h-screen bg-canvas-dark grid grid-cols-1 lg:grid-cols-2 text-on-dark font-sans">
 
-  <!-- Left: Branding Panel -->
   <div class="relative hidden lg:flex flex-col justify-between p-16 overflow-hidden border-r border-hairline-dark bg-canvas-dark">
-    <!-- Header Logo -->
+
     <div class="relative z-10 flex items-center gap-3">
       <div class="p-2 bg-primary/10 rounded-md border border-primary/20">
         <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -17,7 +16,6 @@
       </div>
     </div>
 
-    <!-- Center Pitch -->
     <div class="relative z-10 my-auto max-w-lg">
       <span class="px-3 py-1 bg-primary/10 text-primary-bright text-xs font-semibold rounded-full border border-primary/20 uppercase tracking-wider">
         Stateful Wallet Engine
@@ -27,10 +25,9 @@
         <span class="text-primary-bright">Cerdas & Real-time</span>
       </h1>
       <p class="text-stone text-base leading-relaxed mb-8">
-        Nikmati kemudahan transfer instan, generate invoice QRIS dinamis, dan sistem pengaduan pintar terintegrasi dengan Google Gemini AI.
+        Nikmati kemudahan transfer instan, generate invoice QRIS dinamis, dan sistem pengaduan pintar.
       </p>
 
-      <!-- Trust Badges / Stats -->
       <div class="grid grid-cols-3 gap-6 pt-8 border-t border-hairline-dark">
         <div>
           <p class="text-2xl font-semibold text-on-dark">24/7</p>
@@ -38,6 +35,7 @@
         </div>
         <div>
           <p class="text-2xl font-semibold text-on-dark">Gemini AI</p>
+          <p class="text-xs text-accent-yellow font-medium mt-1">Under Development</p>
           <p class="text-xs text-stone mt-1">Dukungan Cerdas</p>
         </div>
         <div>
@@ -47,17 +45,14 @@
       </div>
     </div>
 
-    <!-- Footer Copyright -->
     <div class="relative z-10 text-xs text-stone font-mono">
       &copy; 2026 E.O.P Eyes Of Priestess. All rights reserved.
     </div>
   </div>
 
-  <!-- Right: Form Panel -->
   <div class="flex items-center justify-center p-8 lg:p-16 bg-canvas-dark relative">
     <div class="w-full max-w-md bg-surface-elevated border border-hairline-dark p-8 rounded-lg shadow-none relative z-10">
-      
-      <!-- Logo for Mobile Only -->
+
       <div class="lg:hidden flex items-center gap-3 mb-8">
         <div class="p-2 bg-primary/10 rounded-md border border-primary/20">
           <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -74,7 +69,6 @@
         <p class="text-stone text-xs font-medium">Selamat datang kembali! Silakan masukkan kredensial Anda.</p>
       </div>
 
-      <!-- Error Alert -->
       <div *ngIf="errorMessage" id="login-error-alert" class="mb-6 p-4 rounded-md border border-accent-danger/30 bg-accent-danger/10 text-accent-danger text-xs font-medium animate-fade-in flex items-start gap-3">
         <svg class="w-4 h-4 shrink-0 text-accent-danger mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>

@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/** DTO error response seragam untuk Core Finance Service. */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class ErrorResponse {
     private int           status;

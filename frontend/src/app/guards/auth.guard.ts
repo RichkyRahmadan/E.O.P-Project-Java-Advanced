@@ -15,7 +15,7 @@ export const authGuard: CanActivateFn = (route, state) => {
   if (expectedRole) {
     const userRole = authService.getUserRole();
     if (userRole !== expectedRole) {
-      // If the user's role does not match, redirect to their proper dashboard
+
       if (userRole === 'USER') {
         router.navigate(['/dashboard/user']);
       } else if (userRole === 'MERCHANT') {

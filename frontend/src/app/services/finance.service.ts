@@ -13,7 +13,7 @@ export interface WalletResponse {
 export interface TransactionResponse {
   invoiceId: string;
   transactionType: string;
-  status: string; // PENDING, SUCCESS, FAILED
+  status: string;
   amount: number;
   sender: any;
   recipient: any;

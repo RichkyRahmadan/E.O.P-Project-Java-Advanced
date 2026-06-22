@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/** DTO untuk request generate invoice QRIS dinamis — {@code POST /api/finance/qris/generate}. */
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class QrisGenerateRequest {
 
