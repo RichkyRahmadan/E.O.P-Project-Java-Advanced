@@ -29,6 +29,9 @@ public class RegisterUserRequest {
     @Email(message = "Format email tidak valid.")
     private String email;
 
+    @NotBlank(message = "Nomor telepon tidak boleh kosong.")
+    private String phone;
+
     @NotBlank(message = "Password tidak boleh kosong.")
     @Size(min = 8, message = "Password minimal 8 karakter.")
     private String password;

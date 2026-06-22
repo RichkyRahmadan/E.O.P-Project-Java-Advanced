@@ -91,14 +91,21 @@ services:
     image: mongo:7-jammy
     container_name: eop-mongodb
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-rechYone}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo-data:/data/db
     networks:
       - eop-backend
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh",
+             "--username", "${MONGO_INITDB_ROOT_USERNAME:-rechYone}",
+             "--password", "${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}",
+             "--authenticationDatabase", "admin",
+             "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -194,7 +201,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-finance:5432/eop_finance_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-rechyone}
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/eop_transaction_log
+      SPRING_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-rechYone}:${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}@mongodb:27017/eop_transaction_log?authSource=admin
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -223,7 +230,7 @@ services:
     container_name: eop-oracle-support
     restart: unless-stopped
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/eop_support_db
+      SPRING_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-rechYone}:${MONGO_INITDB_ROOT_PASSWORD:-maruZensky177013}@mongodb:27017/eop_support_db?authSource=admin
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}

@@ -52,6 +52,9 @@ public class RabbitMQConfig {
     /** Topic saat pembayaran QRIS gagal — Consumer update MongoDB FAILED. */
     public static final String QUEUE_QRIS_FAILED      = "qris.payment.failed";
 
+    public static final String EXCHANGE_IDENTITY      = "eop.identity.exchange";
+    public static final String QUEUE_MERCHANT_REGISTERED = "merchant.registered";
+
     // =========================================================================
     // EXCHANGE
     // =========================================================================
@@ -104,6 +107,22 @@ public class RabbitMQConfig {
     public Binding bindingQrisFailed(Queue qrisFailedQueue, DirectExchange financeExchange) {
         return BindingBuilder.bind(qrisFailedQueue).to(financeExchange)
                 .with(QUEUE_QRIS_FAILED);
+    }
+
+    @Bean
+    public DirectExchange identityExchange() {
+        return new DirectExchange(EXCHANGE_IDENTITY, true, false);
+    }
+
+    @Bean
+    public Queue merchantRegisteredQueue() {
+        return QueueBuilder.durable(QUEUE_MERCHANT_REGISTERED).build();
+    }
+
+    @Bean
+    public Binding bindingMerchantRegistered(Queue merchantRegisteredQueue, DirectExchange identityExchange) {
+        return BindingBuilder.bind(merchantRegisteredQueue).to(identityExchange)
+                .with(QUEUE_MERCHANT_REGISTERED);
     }
 
     // =========================================================================

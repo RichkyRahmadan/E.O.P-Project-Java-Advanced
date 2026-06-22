@@ -32,9 +32,9 @@ export class FinanceService {
     return this.http.get<WalletResponse>('/api/finance/wallet');
   }
 
-  transfer(recipientUsernameOrEmail: string, amount: number, note: string): Observable<TransactionResponse> {
+  transfer(recipientWalletId: string, amount: number, note: string): Observable<TransactionResponse> {
     return this.http.post<TransactionResponse>('/api/finance/transfer', {
-      recipientUsernameOrEmail,
+      recipientWalletId,
       amount,
       note
     });
@@ -56,6 +56,13 @@ export class FinanceService {
   redeemVoucher(code: string): Observable<TransactionResponse> {
     return this.http.post<TransactionResponse>('/api/finance/voucher/redeem', {
       code
+    });
+  }
+
+  transferToOwner(amount: number, note: string): Observable<TransactionResponse> {
+    return this.http.post<TransactionResponse>('/api/finance/transfer/to-owner', {
+      amount,
+      note
     });
   }
 

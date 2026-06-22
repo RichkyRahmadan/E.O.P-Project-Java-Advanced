@@ -3,9 +3,11 @@ package com.priestess.identity.service;
 import com.priestess.identity.dto.AuthResponse;
 import com.priestess.identity.dto.LoginRequest;
 import com.priestess.identity.dto.RefreshTokenRequest;
+import com.priestess.identity.dto.RegisterMerchantByOwnerRequest;
 import com.priestess.identity.dto.RegisterMerchantRequest;
 import com.priestess.identity.dto.RegisterUserRequest;
 import com.priestess.identity.dto.RegisterResponse;
+import com.priestess.identity.dto.UserResolutionResponse;
 
 /**
  * AuthService — Kontrak logika bisnis untuk lapisan Autentikasi E.O.P.
@@ -55,6 +57,21 @@ public interface AuthService {
     RegisterResponse registerMerchant(RegisterMerchantRequest request);
 
     /**
+     * Mendaftarkan merchant baru dimana owner adalah user yang sedang login.
+     * Owner ID diambil dari konteks JWT (header X-User-Id dari Gateway),
+     * sehingga tidak perlu menyertakan nomor telepon owner di body request.
+     *
+     * <p>Hanya user dengan status ACTIVE yang dapat mendaftarkan merchant.
+     *
+     * @param ownerUserId UUID string dari owner (diambil dari JWT claim)
+     * @param request     DTO berisi username, password, merchantName, address
+     * @return {@link RegisterResponse} berisi status registrasi
+     * @throws IllegalArgumentException jika owner tidak ditemukan atau belum aktif
+     * @throws IllegalStateException    jika username sudah terdaftar
+     */
+    RegisterResponse registerMerchantByOwner(String ownerUserId, RegisterMerchantByOwnerRequest request);
+
+    /**
      * Menghapus Refresh Token dari database (logout pengguna).
      * Access Token yang sedang berjalan akan tetap valid hingga 15 menit kadaluarsa
      * secara alami (stateless — tidak bisa di-invalidate dari server).
@@ -62,4 +79,12 @@ public interface AuthService {
      * @param refreshToken string Refresh Token yang akan dihapus
      */
     void logout(String refreshToken);
+
+    /**
+     * Resolves username/email to userId, username and email.
+     *
+     * @param usernameOrEmail string containing username or email to search
+     * @return {@link UserResolutionResponse} with resolved details
+     */
+    UserResolutionResponse resolveUser(String usernameOrEmail);
 }

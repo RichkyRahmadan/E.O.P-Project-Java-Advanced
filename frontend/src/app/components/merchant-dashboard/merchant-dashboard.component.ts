@@ -6,11 +6,12 @@ import { interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { FinanceService, WalletResponse, TransactionResponse } from '../../services/finance.service';
+import { QRCodeModule } from 'angularx-qrcode';
 
 @Component({
   selector: 'app-merchant-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, QRCodeModule],
   templateUrl: './merchant-dashboard.component.html',
   styleUrls: ['./merchant-dashboard.component.css']
 })
@@ -34,6 +35,23 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
   // Current Generated Invoice
   generatedInvoice: TransactionResponse | null = null;
   pollingSubscription: Subscription | null = null;
+
+  // View state
+  activeView: 'dashboard' | 'generate-qris' | 'transfer-owner' = 'dashboard';
+
+  setView(view: 'dashboard' | 'generate-qris' | 'transfer-owner'): void {
+    this.activeView = view;
+    this.qrisError = null;
+    this.qrisSuccess = null;
+    this.transferError = null;
+    this.transferSuccess = null;
+  }
+
+  // Transfer to Owner form (no recipient needed — auto-resolved by backend)
+  transferData = { amount: 0, note: '' };
+  transferError: string | null = null;
+  transferSuccess: string | null = null;
+  transferLoading = false;
 
   // UI state variables
   qrisError: string | null = null;
@@ -134,6 +152,33 @@ export class MerchantDashboardComponent implements OnInit, OnDestroy {
     this.qrisSuccess = null;
     this.qrisError = null;
     this.paymentStatus = 'PENDING';
+  }
+
+  onTransfer(): void {
+    if (this.transferData.amount <= 0) {
+      this.transferError = 'Nominal transfer harus lebih besar dari 0.';
+      return;
+    }
+    this.transferLoading = true;
+    this.transferError = null;
+    this.transferSuccess = null;
+
+    this.financeService.transferToOwner(
+      this.transferData.amount,
+      this.transferData.note
+    ).subscribe({
+      next: (res) => {
+        this.transferSuccess = `Transfer sebesar Rp${res.amount.toLocaleString('id-ID')} ke Owner berhasil! Status: ${res.status}`;
+        this.transferData = { amount: 0, note: '' };
+        this.transferLoading = false;
+        this.loadWallet();
+      },
+      error: (err) => {
+        console.error(err);
+        this.transferError = err.error?.message || 'Transfer gagal. Pastikan saldo mencukupi.';
+        this.transferLoading = false;
+      }
+    });
   }
 
   onLogout(): void {

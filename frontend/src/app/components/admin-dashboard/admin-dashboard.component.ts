@@ -49,6 +49,18 @@ export class AdminDashboardComponent implements OnInit {
   // Audit Logs (local session)
   auditLogs: Array<{ action: string; target: string; time: Date }> = [];
 
+  activeView = 'dashboard';
+
+  setView(view: string): void {
+    this.activeView = view;
+    this.kycSuccess = null;
+    this.kycError = null;
+    this.merchantSuccess = null;
+    this.merchantError = null;
+    this.suspendSuccess = null;
+    this.suspendError = null;
+  }
+
   ngOnInit(): void {
     this.userId = this.authService.getUserId() || '';
     this.userRole = this.authService.getUserRole() || '';

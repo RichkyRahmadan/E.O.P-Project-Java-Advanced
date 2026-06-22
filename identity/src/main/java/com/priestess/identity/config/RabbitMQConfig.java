@@ -45,6 +45,12 @@ public class RabbitMQConfig {
      */
     public static final String QUEUE_USER_SUSPENDED = "user.suspended";
 
+    /**
+     * Topic yang dipublikasikan saat merchant berhasil terdaftar.
+     * Core Finance Service berlangganan topic ini untuk sinkronisasi owner.
+     */
+    public static final String QUEUE_MERCHANT_REGISTERED = "merchant.registered";
+
     // =========================================================================
     // EXCHANGE
     // =========================================================================
@@ -63,6 +69,11 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(QUEUE_USER_SUSPENDED).build();
     }
 
+    @Bean
+    public Queue merchantRegisteredQueue() {
+        return QueueBuilder.durable(QUEUE_MERCHANT_REGISTERED).build();
+    }
+
     // =========================================================================
     // BINDING
     // =========================================================================
@@ -71,6 +82,12 @@ public class RabbitMQConfig {
     public Binding bindingUserSuspended(Queue userSuspendedQueue, DirectExchange identityExchange) {
         return BindingBuilder.bind(userSuspendedQueue).to(identityExchange)
                 .with(QUEUE_USER_SUSPENDED);
+    }
+
+    @Bean
+    public Binding bindingMerchantRegistered(Queue merchantRegisteredQueue, DirectExchange identityExchange) {
+        return BindingBuilder.bind(merchantRegisteredQueue).to(identityExchange)
+                .with(QUEUE_MERCHANT_REGISTERED);
     }
 
     // =========================================================================

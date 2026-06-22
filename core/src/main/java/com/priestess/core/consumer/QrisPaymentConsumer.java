@@ -12,6 +12,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -85,9 +86,16 @@ public class QrisPaymentConsumer {
             // FASE 2B — Mutasi saldo PostgreSQL dengan Optimistic Locking (@Version)
             // ================================================================
             WalletEntity buyerWallet = walletRepository
-                    .findByOwnerId(UUID.fromString(buyerOwnerId))
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Wallet buyer tidak ditemukan: " + buyerOwnerId));
+                    .findByOwnerIdAndOwnerType(UUID.fromString(buyerOwnerId), "USER")
+                    .orElseGet(() -> {
+                        log.info("[QrisPaymentConsumer] Wallet buyer tidak ditemukan: {}. Inisialisasi lazy wallet tipe USER", buyerOwnerId);
+                        WalletEntity wallet = WalletEntity.builder()
+                                .ownerId(UUID.fromString(buyerOwnerId))
+                                .ownerType("USER")
+                                .balance(BigDecimal.ZERO)
+                                .build();
+                        return walletRepository.save(wallet);
+                    });
 
             UUID merchantWalletId = UUID.fromString(doc.getRecipient().getWalletId());
             WalletEntity merchantWallet = walletRepository.findById(merchantWalletId)

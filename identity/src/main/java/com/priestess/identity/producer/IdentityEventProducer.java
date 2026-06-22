@@ -64,7 +64,34 @@ public class IdentityEventProducer {
     }
 
     // =========================================================================
-    // INNER DTO — Payload event suspend
+    // PUBLISH: Merchant Registered
+    // =========================================================================
+
+    /**
+     * Mempublikasikan event bahwa merchant baru telah berhasil didaftarkan.
+     */
+    public void publishMerchantRegistered(String merchantUserId, String merchantId, String ownerUserId, String ownerPhoneNumber, String merchantName) {
+        MerchantRegisteredEvent event = MerchantRegisteredEvent.builder()
+                .merchantUserId(merchantUserId)
+                .merchantId(merchantId)
+                .ownerUserId(ownerUserId)
+                .ownerPhoneNumber(ownerPhoneNumber)
+                .merchantName(merchantName)
+                .registeredAt(java.time.LocalDateTime.now().toString())
+                .build();
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_IDENTITY,
+                RabbitMQConfig.QUEUE_MERCHANT_REGISTERED,
+                event
+        );
+
+        log.info("[IdentityEventProducer] PUBLISHED merchant.registered — merchantUserId={}, merchantId={}, ownerUserId={}, ownerPhoneNumber={}",
+                merchantUserId, merchantId, ownerUserId, ownerPhoneNumber);
+    }
+
+    // =========================================================================
+    // INNER DTOs
     // =========================================================================
 
     /**
@@ -78,5 +105,21 @@ public class IdentityEventProducer {
         private String userId;
         private String username;
         private String suspendedAt;
+    }
+
+    /**
+     * Payload event yang dikirim saat merchant terdaftar.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MerchantRegisteredEvent {
+        private String merchantUserId;
+        private String merchantId;
+        private String ownerUserId;
+        private String ownerPhoneNumber;
+        private String merchantName;
+        private String registeredAt;
     }
 }

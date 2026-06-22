@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS wallets (
 -- sesuai blueprint SECTION 5B.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS vouchers (
-    id          BIGSERIAL      PRIMARY KEY,
+    id          BIGINT         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     code        VARCHAR(50)    NOT NULL UNIQUE,
     amount      DECIMAL(19,2)  NOT NULL CHECK (amount > 0),
     is_redeemed BOOLEAN        NOT NULL DEFAULT FALSE,

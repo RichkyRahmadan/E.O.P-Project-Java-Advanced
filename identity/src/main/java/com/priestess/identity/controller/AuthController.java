@@ -7,15 +7,18 @@ import com.priestess.identity.dto.RegisterMerchantRequest;
 import com.priestess.identity.dto.RegisterUserRequest;
 import com.priestess.identity.dto.RegisterResponse;
 import com.priestess.identity.service.AuthService;
+import com.priestess.identity.dto.UserResolutionResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -107,5 +110,19 @@ public class AuthController {
         log.info("[AuthController] POST /api/auth/logout");
         authService.logout(refreshToken);
         return ResponseEntity.noContent().build();
+    }
+
+    // =========================================================================
+    // GET /api/auth/resolve
+    // =========================================================================
+
+    /**
+     * Resolve User — Cari user berdasarkan username atau email.
+     * Response: 200 OK + UserResolutionResponse
+     */
+    @GetMapping("/resolve")
+    public ResponseEntity<UserResolutionResponse> resolveUser(@RequestParam("query") String query) {
+        log.info("[AuthController] GET /api/auth/resolve — query: {}", query);
+        return ResponseEntity.ok(authService.resolveUser(query));
     }
 }

@@ -59,6 +59,13 @@ Dokumen ini mencatat riwayat perkembangan, perubahan arsitektur, dan perbaikan b
     * Saat logout, `identity` service menghapus seluruh sesi aktif dari Redis Set user tersebut.
     * Saat admin menangguhkan akun (suspend), sesi dibersihkan langsung dari Redis, lalu event `user.suspended` dikirim via RabbitMQ agar Gateway mendaftarkannya ke in-memory cache lokal untuk penolakan instan.
 
+### Milestone 7 (Terbaru): Refactoring UI Tailwind & Perbaikan Angular Compiler
+* **Deskripsi:** Pembaruan menyeluruh pada tampilan visual frontend Angular dengan mengadopsi Tailwind CSS secara konsisten, mengeliminasi emoji, dan memperbaiki kendala kompilasi template.
+* **Perubahan Utama:**
+  * **Penerapan Tailwind CSS:** Merefaktor seluruh halaman (Login, Register, User Dashboard, Merchant Registration, Admin Dashboard, Support complaints) menjadi bertema *premium dark-mode* dengan ornamen modern (kaca transparan/glassmorphism, gradient dinamis, layout responsif).
+  * **Pembersihan Emoji:** Menghapus emoji sebagai representasi visual dan menggantinya dengan ikon SVG inline yang setema dan minimalis.
+  * **Perbaikan Error Compiler (NG5002):** Memperbaiki error sintaksis pada `admin-dashboard.component.html` yang disebabkan oleh binding nama kelas yang memiliki karakter slash `/` (misalnya `[class.bg-primary/10]`). Seluruh class binding tersebut diganti menggunakan direktif `[ngClass]`.
+
 ---
 
 ## 🛠 Status Fitur & Checklist Perubahan
@@ -73,3 +80,16 @@ Dokumen ini mencatat riwayat perkembangan, perubahan arsitektur, dan perbaikan b
 | **AI Analisis** | Klasifikasi & prioritas keluhan otomatis | **Selesai** | Berjalan asinkron menggunakan Gemini AI |
 | **Email Alert** | Notifikasi keluhan prioritas tinggi | **Selesai** | Berjalan asinkron menggunakan thread pool |
 | **Fitur Suspend** | Real-time user session invalidation | **Selesai** | Sinkronisasi cache memori via broker & Redis eviction |
+| **UI/UX Tailwind** | Refaktor desain UI premium & perbaikan syntax compiler | **Selesai** | Menggunakan visual terpadu dark-theme, SVG, & ngClass |
+
+---
+
+## 📋 Rencana Pengembangan Selanjutnya (TODO)
+
+Berikut adalah daftar fitur dan perbaikan yang akan dikerjakan pada fase berikutnya:
+- [ ] **Repair AI-Based Admin and Complaint Check** — Mengoptimalkan mekanisme evaluasi otomatis tiket pengaduan menggunakan Gemini AI serta peninjauan manual di dashboard admin.
+- [ ] **Editable Profile Picture** — Implementasi unggah foto profil pengguna yang dapat diedit langsung dari halaman dashboard.
+- [ ] **Xendit Payment Gateway to self Top-Up** — Integrasi gateway pembayaran Xendit untuk isi ulang saldo dompet digital secara mandiri menggunakan Virtual Account atau retail outlet.
+- [ ] **Admin Voucher Generation** — Fitur bagi administrator untuk meng-generate kode voucher promo atau saldo yang dapat ditukarkan (redeem) oleh pengguna.
+- [ ] **Repair Payment Gateway** — Perbaikan alur transaksi pembayaran yang menyebabkan user tidak dapat login setelah melakukan pembayaran.
+- [ ] **Repair Registration Bug** - Perbaikan bug button daftar agar tidak dapat ditekan secara spam 

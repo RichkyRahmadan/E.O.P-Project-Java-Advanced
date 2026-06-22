@@ -55,6 +55,10 @@ public class UserEntity {
     @Column(name = "email", length = 100, unique = true, nullable = false)
     private String email;
 
+    /** Nomor telepon pengguna yang unik. */
+    @Column(name = "phone", length = 20, unique = true)
+    private String phone;
+
     /**
      * Password dalam format BCrypt hash.
      * JANGAN pernah menyimpan atau mengembalikan nilai ini ke klien secara langsung.

@@ -16,9 +16,10 @@ export class RegisterComponent {
   private router = inject(Router);
 
   userData = {
-    username: '',
-    email: '',
-    password: ''
+    username: 'richky',
+    email: 'richky@unas.ac.id',
+    phone: '081234567890',
+    password: 'password123'
   };
 
   errorMessage: string | null = null;
@@ -26,7 +27,7 @@ export class RegisterComponent {
   loading = false;
 
   onSubmit(): void {
-    if (!this.userData.username || !this.userData.email || !this.userData.password) {
+    if (!this.userData.username || !this.userData.email || !this.userData.phone || !this.userData.password) {
       this.errorMessage = 'Semua field wajib diisi.';
       return;
     }

@@ -45,7 +45,7 @@ public class AdminController {
      * <p>Hanya user dengan permission {@code VERIFY_KYC} yang dapat mengaksesnya.
      * Response: 200 OK + pesan konfirmasi
      */
-    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @PreAuthorize("hasPermission(null, 'ADMIN_KYC')")
     @PatchMapping("/users/{userId}/kyc")
     public ResponseEntity<String> verifyKyc(@PathVariable UUID userId) {
         log.info("[AdminController] PATCH /api/admin/users/{}/kyc", userId);
@@ -67,7 +67,7 @@ public class AdminController {
      *
      * Response: 200 OK + pesan konfirmasi
      */
-    @PreAuthorize("hasPermission(null, 'SUSPEND_USER')")
+    @PreAuthorize("hasPermission(null, 'ADMIN_SUSPEND')")
     @PatchMapping("/users/{userId}/suspend")
     public ResponseEntity<String> suspendUser(@PathVariable UUID userId) {
         log.info("[AdminController] PATCH /api/admin/users/{}/suspend", userId);
@@ -84,7 +84,7 @@ public class AdminController {
      *
      * Response: 200 OK + pesan konfirmasi
      */
-    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @PreAuthorize("hasPermission(null, 'ADMIN_MERCHANT_VERIFY')")
     @PatchMapping("/merchants/{merchantId}/verify")
     public ResponseEntity<String> verifyMerchant(@PathVariable UUID merchantId) {
         log.info("[AdminController] PATCH /api/admin/merchants/{}/verify", merchantId);
@@ -95,7 +95,7 @@ public class AdminController {
     /**
      * Get list of pending users (KYC).
      */
-    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @PreAuthorize("hasPermission(null, 'ADMIN_KYC')")
     @GetMapping("/users/pending")
     public ResponseEntity<List<PendingUserResponse>> getPendingUsers() {
         log.info("[AdminController] GET /api/admin/users/pending");
@@ -105,7 +105,7 @@ public class AdminController {
     /**
      * Get list of pending merchants (unverified).
      */
-    @PreAuthorize("hasPermission(null, 'VERIFY_KYC')")
+    @PreAuthorize("hasPermission(null, 'ADMIN_MERCHANT_VERIFY')")
     @GetMapping("/merchants/pending")
     public ResponseEntity<List<PendingMerchantResponse>> getPendingMerchants() {
         log.info("[AdminController] GET /api/admin/merchants/pending");

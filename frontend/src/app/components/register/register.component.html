@@ -1,87 +1,202 @@
-<div class="auth-page animate-fade-up">
+<div class="min-h-screen bg-canvas-dark grid grid-cols-1 lg:grid-cols-2 text-on-dark font-sans">
 
   <!-- Left: Branding Panel -->
-  <div class="auth-brand-panel">
-    <div class="auth-brand-content">
-      <div class="auth-logo">
-        <span class="logo-icon">👁</span>
-        <span class="logo-text">E.O.P</span>
+  <div class="relative hidden lg:flex flex-col justify-between p-16 overflow-hidden border-r border-hairline-dark bg-canvas-dark">
+    <!-- Header Logo -->
+    <div class="relative z-10 flex items-center gap-3">
+      <div class="p-2 bg-primary/10 rounded-md border border-primary/20">
+        <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+          <path d="M2 12h20"/>
+        </svg>
       </div>
-      <h1 class="auth-headline">Buat akun<br>dompet digital.</h1>
-      <p class="auth-sub">Bergabung dan nikmati layanan transfer, QRIS, dan pengaduan berbasis AI secara gratis.</p>
+      <div>
+        <span class="font-display text-xl font-bold tracking-tight text-on-dark">E.O.P</span>
+        <span class="block text-[10px] text-stone font-semibold tracking-wider uppercase">Eyes of Priestess</span>
+      </div>
+    </div>
+
+    <!-- Center Pitch -->
+    <div class="relative z-10 my-auto max-w-lg">
+      <span class="px-3 py-1 bg-primary/10 text-primary-bright text-xs font-semibold rounded-full border border-primary/20 uppercase tracking-wider">
+        Mulai Petualangan Finansial Anda
+      </span>
+      <h1 class="font-display text-5xl font-semibold leading-tight text-on-dark mt-4 mb-6 tracking-tight">
+        Langkah Awal <br>
+        <span class="text-primary-bright">Menuju Kemudahan</span>
+      </h1>
+      <p class="text-stone text-base leading-relaxed mb-8">
+        Bergabunglah bersama ribuan pengguna aktif yang menikmati transaksi aman, cepat, dan integrasi cerdas setiap hari.
+      </p>
+
+      <!-- Steps Grid -->
+      <div class="grid grid-cols-3 gap-6 pt-8 border-t border-hairline-dark">
+        <div>
+          <span class="text-xs text-primary-bright font-semibold uppercase tracking-wider font-mono">Langkah 1</span>
+          <p class="text-sm font-semibold text-on-dark mt-1">Daftar Akun</p>
+        </div>
+        <div>
+          <span class="text-xs text-primary-bright font-semibold uppercase tracking-wider font-mono">Langkah 2</span>
+          <p class="text-sm font-semibold text-on-dark mt-1">Aktivasi KYC</p>
+        </div>
+        <div>
+          <span class="text-xs text-primary-bright font-semibold uppercase tracking-wider font-mono">Langkah 3</span>
+          <p class="text-sm font-semibold text-on-dark mt-1">Siap Transaksi</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Copyright -->
+    <div class="relative z-10 text-xs text-stone font-mono">
+      &copy; 2026 E.O.P Eyes Of Priestess. All rights reserved.
     </div>
   </div>
 
   <!-- Right: Form Panel -->
-  <div class="auth-form-panel">
-    <div class="auth-form-card">
-
-      <div class="auth-form-header">
-        <h2>Registrasi User</h2>
-        <p>Isi data diri untuk membuat akun baru</p>
+  <div class="flex items-center justify-center p-8 lg:p-16 bg-canvas-dark relative">
+    <div class="w-full max-w-md bg-surface-elevated border border-hairline-dark p-8 rounded-lg shadow-none relative z-10">
+      
+      <!-- Logo for Mobile Only -->
+      <div class="lg:hidden flex items-center gap-3 mb-8">
+        <div class="p-2 bg-primary/10 rounded-md border border-primary/20">
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+            <path d="M2 12h20"/>
+          </svg>
+        </div>
+        <span class="font-display text-lg font-bold tracking-tight text-on-dark">E.O.P</span>
       </div>
 
-      <div *ngIf="errorMessage" id="register-error-alert" class="alert alert-error">
-        {{ errorMessage }}
+      <div class="flex flex-col gap-2 mb-8">
+        <h2 class="font-display text-2xl font-bold text-on-dark tracking-tight">Registrasi User</h2>
+        <p class="text-stone text-xs font-medium">Buat akun dompet digital personal baru Anda sekarang.</p>
       </div>
 
-      <div *ngIf="successMessage" id="register-success-alert" class="alert alert-success" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgb(16, 185, 129); color: rgb(16, 185, 129); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
-        {{ successMessage }}
+      <!-- Error Alert -->
+      <div *ngIf="errorMessage" id="register-error-alert" class="mb-6 p-4 rounded-md border border-accent-danger/30 bg-accent-danger/10 text-accent-danger text-xs font-medium animate-fade-in flex items-start gap-3">
+        <svg class="w-4 h-4 shrink-0 text-accent-danger mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>{{ errorMessage }}</span>
       </div>
 
-      <form (ngSubmit)="onSubmit()" #registerForm="ngForm" class="auth-form">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            [(ngModel)]="userData.username"
-            placeholder="Min. 3 karakter"
-            required
-            minlength="3"
-            #usernameInput="ngModel">
+      <!-- Success Alert -->
+      <div *ngIf="successMessage" id="register-success-alert" class="mb-6 p-4 rounded-md border border-accent-teal/30 bg-accent-teal/10 text-accent-teal text-xs font-medium animate-fade-in flex items-start gap-3">
+        <svg class="w-4 h-4 shrink-0 text-accent-teal mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" #registerForm="ngForm" class="space-y-4">
+        <div>
+          <label for="username" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-ash pointer-events-none">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              [(ngModel)]="userData.username"
+              placeholder="Min. 3 karakter"
+              required
+              minlength="3"
+              #usernameInput="ngModel"
+              class="w-full h-11 pl-10 pr-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-sm">
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            [(ngModel)]="userData.email"
-            placeholder="contoh@domain.com"
-            required
-            email
-            #emailInput="ngModel">
+        <div>
+          <label for="email" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-ash pointer-events-none">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              [(ngModel)]="userData.email"
+              placeholder="contoh@domain.com"
+              required
+              email
+              #emailInput="ngModel"
+              class="w-full h-11 pl-10 pr-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-sm">
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            [(ngModel)]="userData.password"
-            placeholder="Min. 8 karakter"
-            required
-            minlength="8"
-            #passwordInput="ngModel">
+        <div>
+          <label for="phone" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">Nomor Telepon</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-ash pointer-events-none">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              id="phone"
+              name="phone"
+              [(ngModel)]="userData.phone"
+              placeholder="Contoh: 08123456789"
+              required
+              #phoneInput="ngModel"
+              class="w-full h-11 pl-10 pr-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-[11px] font-semibold text-stone uppercase tracking-wider mb-2">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-ash pointer-events-none">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              [(ngModel)]="userData.password"
+              placeholder="Min. 8 karakter"
+              required
+              minlength="8"
+              #passwordInput="ngModel"
+              class="w-full h-11 pl-10 pr-4 bg-canvas-dark border border-hairline-dark focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-on-dark placeholder-ash outline-none transition-all text-sm">
+          </div>
         </div>
 
         <button
           type="submit"
           id="btn-register-submit"
-          class="btn btn-primary btn-block"
-          [disabled]="loading || !registerForm.valid">
-          <span *ngIf="!loading">Buat Akun</span>
-          <span *ngIf="loading">Memproses...</span>
+          class="w-full h-12 mt-4 bg-canvas-light hover:bg-faint text-canvas-dark font-semibold rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-none active:scale-[0.98]">
+          <span *ngIf="!loading">Buat Akun Baru</span>
+          <span *ngIf="loading" class="flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4 text-canvas-dark" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Mendaftarkan...
+          </span>
         </button>
       </form>
 
-      <div class="auth-footer">
-        <p>Sudah punya akun? <a routerLink="/login" id="link-login">Masuk disini</a></p>
-        <p>Ingin berjualan? <a routerLink="/register-merchant" id="link-register-merchant">Daftar Merchant</a></p>
+      <div class="mt-8 pt-6 border-t border-hairline-dark flex flex-col gap-3 text-center text-xs">
+        <p class="text-stone font-medium">Sudah memiliki akun? <a routerLink="/login" id="link-login" class="text-primary-bright font-bold hover:text-primary transition-colors">Masuk Disini</a></p>
       </div>
 
     </div>

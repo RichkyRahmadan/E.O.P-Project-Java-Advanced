@@ -39,4 +39,7 @@ public class RegisterMerchantRequest {
 
     @NotBlank(message = "Alamat merchant tidak boleh kosong.")
     private String address;
+
+    @NotBlank(message = "Nomor telepon owner tidak boleh kosong.")
+    private String ownerPhoneNumber;
 }

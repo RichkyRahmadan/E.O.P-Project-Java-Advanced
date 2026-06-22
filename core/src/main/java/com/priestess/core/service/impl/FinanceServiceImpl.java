@@ -1,4 +1,4 @@
-package com.priestess.core.service.impl;
+        package com.priestess.core.service.impl;
 
 import com.priestess.core.dto.QrisGenerateRequest;
 import com.priestess.core.dto.QrisPayRequest;
@@ -6,10 +6,12 @@ import com.priestess.core.dto.TransactionResponse;
 import com.priestess.core.dto.TransferRequest;
 import com.priestess.core.dto.VoucherRedeemRequest;
 import com.priestess.core.dto.WalletResponse;
+import com.priestess.core.entity.MerchantOwnerMappingEntity;
 import com.priestess.core.entity.TransactionDocument;
 import com.priestess.core.entity.VoucherEntity;
 import com.priestess.core.entity.WalletEntity;
 import com.priestess.core.producer.FinanceEventProducer;
+import com.priestess.core.repository.MerchantOwnerMappingRepository;
 import com.priestess.core.repository.TransactionRepository;
 import com.priestess.core.repository.VoucherRepository;
 import com.priestess.core.repository.WalletRepository;
@@ -61,6 +63,7 @@ public class FinanceServiceImpl implements FinanceService {
     private final WalletRepository      walletRepository;
     private final VoucherRepository     voucherRepository;
     private final TransactionRepository transactionRepository;
+    private final MerchantOwnerMappingRepository merchantOwnerMappingRepository;
     /**
      * Producer untuk mempublikasikan event QRIS ke RabbitMQ.
      * Sesuai SECTION 3 blueprint: komunikasi ke broker dilakukan via Producer bean.
@@ -74,22 +77,11 @@ public class FinanceServiceImpl implements FinanceService {
     @Override
     @Transactional
     public WalletResponse getMyWallet(UUID ownerId, String role) {
-        WalletEntity wallet;
-        try {
-            wallet = findWalletByOwner(ownerId);
-        } catch (IllegalStateException e) {
-            String ownerType = "USER";
-            if (role != null && role.contains("MERCHANT")) {
-                ownerType = "MERCHANT";
-            }
-            log.info("[FinanceService] Wallet tidak ditemukan untuk owner: {}. Inisialisasi lazy wallet tipe {}", ownerId, ownerType);
-            wallet = WalletEntity.builder()
-                    .ownerId(ownerId)
-                    .ownerType(ownerType)
-                    .balance(BigDecimal.ZERO)
-                    .build();
-            wallet = walletRepository.save(wallet);
+        String ownerType = "USER";
+        if (role != null && role.contains("MERCHANT")) {
+            ownerType = "MERCHANT";
         }
+        WalletEntity wallet = findWalletByOwner(ownerId, ownerType);
         return toWalletResponse(wallet);
     }
 
@@ -108,13 +100,18 @@ public class FinanceServiceImpl implements FinanceService {
      */
     @Override
     @Transactional
-    public TransactionResponse transfer(UUID senderOwnerId, TransferRequest request) {
+    public TransactionResponse transfer(UUID senderOwnerId, String role, TransferRequest request) {
         String invoiceId = "TRF-" + UUID.randomUUID();
-        log.info("[FinanceService] Transfer dimulai — invoiceId={}, from={}, to={}",
-                invoiceId, senderOwnerId, request.getRecipientWalletId());
+        log.info("[FinanceService] Transfer dimulai — invoiceId={}, from={}, role={}, to={}",
+                invoiceId, senderOwnerId, role, request.getRecipientWalletId());
+
+        String ownerType = "USER";
+        if (role != null && role.contains("MERCHANT")) {
+            ownerType = "MERCHANT";
+        }
 
         // LANGKAH 1 — Baca data awal (masih dalam @Transactional yang sama)
-        WalletEntity senderWallet = findWalletByOwner(senderOwnerId);
+        WalletEntity senderWallet = findWalletByOwner(senderOwnerId, ownerType);
 
         // Simpan PENDING ke MongoDB SEBELUM mutasi PostgreSQL
         TransactionDocument doc = TransactionDocument.builder()
@@ -137,9 +134,19 @@ public class FinanceServiceImpl implements FinanceService {
         try {
             validateSufficientBalance(senderWallet, request.getAmount());
 
-            WalletEntity recipientWallet = walletRepository
-                    .findById(UUID.fromString(request.getRecipientWalletId()))
+            UUID recipientUuid = UUID.fromString(request.getRecipientWalletId());
+            WalletEntity recipientWallet = walletRepository.findById(recipientUuid)
+                    .or(() -> walletRepository.findByOwnerIdAndOwnerType(recipientUuid, "USER"))
                     .orElseThrow(() -> new IllegalStateException("Wallet penerima tidak ditemukan."));
+
+            // Jika sender adalah Merchant, validasi bahwa wallet penerima milik owner merchant ini
+            if (role != null && role.contains("MERCHANT")) {
+                MerchantOwnerMappingEntity mapping = merchantOwnerMappingRepository.findByMerchantUserId(senderOwnerId)
+                        .orElseThrow(() -> new IllegalStateException("Data owner untuk merchant ini tidak ditemukan. Hubungi CS."));
+                if (!mapping.getOwnerUserId().equals(recipientWallet.getOwnerId())) {
+                    throw new IllegalStateException("Akun merchant hanya diperbolehkan transfer ke wallet milik owner merchant tersebut.");
+                }
+            }
 
             // Debit sender — @Version Optimistic Locking aktif secara otomatis
             senderWallet.setBalance(senderWallet.getBalance().subtract(request.getAmount()));
@@ -150,6 +157,7 @@ public class FinanceServiceImpl implements FinanceService {
             walletRepository.save(recipientWallet);
 
             // LANGKAH 3 — Update MongoDB SUCCESS
+            doc.getRecipient().setWalletId(recipientWallet.getId().toString());
             doc.getRecipient().setUserId(recipientWallet.getOwnerId().toString());
             doc.setStatus("SUCCESS");
             transactionRepository.save(doc);
@@ -171,6 +179,83 @@ public class FinanceServiceImpl implements FinanceService {
     }
 
     // =========================================================================
+    // TRANSFER KE OWNER (Merchant → Owner otomatis)
+    // =========================================================================
+
+    /**
+     * Transfer dari wallet MERCHANT ke wallet OWNER secara otomatis.
+     *
+     * <p>Owner diidentifikasi dari tabel {@code merchant_owner_mappings}
+     * tanpa perlu input manual dari merchant. Implementasi menggunakan
+     * pola Dual-Write yang sama dengan transfer biasa.
+     */
+    @Override
+    @Transactional
+    public TransactionResponse transferToOwner(UUID merchantUserId, java.math.BigDecimal amount, String note) {
+        String invoiceId = "TRF-OWN-" + UUID.randomUUID();
+        log.info("[FinanceService] Transfer ke owner dimulai — invoiceId={}, merchant={}, amount={}",
+                invoiceId, merchantUserId, amount);
+
+        // Cari mapping merchant → owner
+        MerchantOwnerMappingEntity mapping = merchantOwnerMappingRepository.findByMerchantUserId(merchantUserId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Data owner untuk merchant ini tidak ditemukan. Silakan hubungi CS."));
+
+        UUID ownerUserId = mapping.getOwnerUserId();
+
+        // Cari wallet sender (MERCHANT) dan recipient (USER milik owner)
+        WalletEntity senderWallet = findWalletByOwner(merchantUserId, "MERCHANT");
+        WalletEntity recipientWallet = walletRepository.findByOwnerIdAndOwnerType(ownerUserId, "USER")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Wallet owner tidak ditemukan. Pastikan owner sudah pernah login."));
+
+        // Simpan PENDING ke MongoDB
+        TransactionDocument doc = TransactionDocument.builder()
+                .invoiceId(invoiceId)
+                .transactionType("TRANSFER_TO_OWNER")
+                .status("PENDING")
+                .amount(amount)
+                .sender(TransactionDocument.PartyInfo.builder()
+                        .userId(merchantUserId.toString())
+                        .walletId(senderWallet.getId().toString())
+                        .build())
+                .recipient(TransactionDocument.PartyInfo.builder()
+                        .userId(ownerUserId.toString())
+                        .walletId(recipientWallet.getId().toString())
+                        .build())
+                .note(note)
+                .build();
+        transactionRepository.save(doc);
+
+        try {
+            validateSufficientBalance(senderWallet, amount);
+
+            // Debit merchant wallet
+            senderWallet.setBalance(senderWallet.getBalance().subtract(amount));
+            walletRepository.save(senderWallet);
+
+            // Kredit owner wallet
+            recipientWallet.setBalance(recipientWallet.getBalance().add(amount));
+            walletRepository.save(recipientWallet);
+
+            // Update MongoDB ke SUCCESS
+            doc.setStatus("SUCCESS");
+            transactionRepository.save(doc);
+
+            log.info("[FinanceService] Transfer ke owner berhasil — invoiceId={}, owner={}", invoiceId, ownerUserId);
+
+        } catch (Exception e) {
+            doc.setStatus("FAILED");
+            doc.setNote("ERROR: " + e.getMessage());
+            transactionRepository.save(doc);
+            log.error("[FinanceService] Transfer ke owner gagal — invoiceId={}, alasan={}", invoiceId, e.getMessage());
+            throw new IllegalStateException("Transfer ke owner gagal: " + e.getMessage());
+        }
+
+        return toTransactionResponse(doc);
+    }
+
+    // =========================================================================
     // GENERATE QRIS DINAMIS
     // =========================================================================
 
@@ -178,11 +263,12 @@ public class FinanceServiceImpl implements FinanceService {
     @Transactional
     public TransactionResponse generateQris(UUID merchantOwnerId, QrisGenerateRequest request) {
         String invoiceId = "QRIS-" + UUID.randomUUID();
-        WalletEntity merchantWallet = findWalletByOwner(merchantOwnerId);
+        WalletEntity merchantWallet = findWalletByOwner(merchantOwnerId, "MERCHANT");
 
-        // Raw QRIS data — format sederhana (gunakan library QRIS resmi di produksi)
-        String rawQrisData = String.format("EOP-QRIS|INV:%s|AMT:%.2f|MID:%s",
-                invoiceId, request.getAmount(), merchantWallet.getId());
+        // QR hanya menyimpan invoiceId — user scan lalu masukkan invoiceId ke aplikasi
+        // untuk membayar. Amount dan detail merchant dibaca dari MongoDB saat pembayaran.
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusMinutes(5);
 
         TransactionDocument doc = TransactionDocument.builder()
                 .invoiceId(invoiceId)
@@ -193,12 +279,13 @@ public class FinanceServiceImpl implements FinanceService {
                         .userId(merchantOwnerId.toString())
                         .walletId(merchantWallet.getId().toString())
                         .build())
-                .rawQrisData(rawQrisData)
+                .rawQrisData(invoiceId)   // QR cukup encode invoiceId saja
+                .expiresAt(expiresAt)
                 .note(request.getNote())
                 .build();
 
         transactionRepository.save(doc);
-        log.info("[FinanceService] QRIS invoice dibuat — invoiceId={}", invoiceId);
+        log.info("[FinanceService] QRIS invoice dibuat — invoiceId={}, expiresAt={}", invoiceId, expiresAt);
 
         return toTransactionResponse(doc);
     }
@@ -235,8 +322,19 @@ public class FinanceServiceImpl implements FinanceService {
                     "Invoice " + invoiceId + " sudah tidak bisa dibayar (status: " + doc.getStatus() + ").");
         }
 
+        // Validasi expiry — jika sudah lewat 5 menit, tandai DENIED dan tolak
+        if (doc.getExpiresAt() != null && LocalDateTime.now().isAfter(doc.getExpiresAt())) {
+            doc.setStatus("DENIED");
+            doc.setNote("Invoice kedaluwarsa — pembayaran tidak dilakukan dalam batas 5 menit.");
+            transactionRepository.save(doc);
+            log.warn("[FinanceService] QRIS ditolak (expired) — invoiceId={}, expiredAt={}",
+                    invoiceId, doc.getExpiresAt());
+            throw new IllegalStateException(
+                    "Invoice QRIS sudah kedaluwarsa. Minta merchant untuk generate QRIS baru.");
+        }
+
         // Validasi buyer wallet ada (early check sebelum publish ke broker)
-        WalletEntity buyerWallet = findWalletByOwner(buyerOwnerId);
+        WalletEntity buyerWallet = findWalletByOwner(buyerOwnerId, "USER");
 
         // FASE 1: Publish event ke RabbitMQ — pemrosesan saldo dilanjutkan oleh Consumer
         // QrisPaymentConsumer akan mendengarkan event ini dan memproses mutasi saldo
@@ -266,7 +364,7 @@ public class FinanceServiceImpl implements FinanceService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Kode voucher '" + request.getCode() + "' tidak valid atau sudah digunakan."));
 
-        WalletEntity wallet = findWalletByOwner(ownerId);
+        WalletEntity wallet = findWalletByOwner(ownerId, "USER");
 
         TransactionDocument doc = TransactionDocument.builder()
                 .invoiceId(invoiceId)
@@ -325,10 +423,17 @@ public class FinanceServiceImpl implements FinanceService {
     // PRIVATE HELPERS
     // =========================================================================
 
-    private WalletEntity findWalletByOwner(UUID ownerId) {
-        return walletRepository.findByOwnerId(ownerId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Wallet tidak ditemukan untuk owner: " + ownerId));
+    private WalletEntity findWalletByOwner(UUID ownerId, String defaultOwnerType) {
+        return walletRepository.findByOwnerIdAndOwnerType(ownerId, defaultOwnerType)
+                .orElseGet(() -> {
+                    log.info("[FinanceService] Wallet tidak ditemukan untuk owner: {}. Inisialisasi lazy wallet tipe {}", ownerId, defaultOwnerType);
+                    WalletEntity wallet = WalletEntity.builder()
+                            .ownerId(ownerId)
+                            .ownerType(defaultOwnerType)
+                            .balance(BigDecimal.ZERO)
+                            .build();
+                    return walletRepository.save(wallet);
+                });
     }
 
     private void validateSufficientBalance(WalletEntity wallet, BigDecimal amount) {
@@ -354,6 +459,8 @@ public class FinanceServiceImpl implements FinanceService {
                 .amount(d.getAmount())
                 .note(d.getNote())
                 .createdAt(d.getCreatedAt())
+                .expiresAt(d.getExpiresAt())
+                .rawQrisData(d.getRawQrisData())
                 .sender(d.getSender() != null ? TransactionResponse.PartyInfo.builder()
                         .userId(d.getSender().getUserId())
                         .walletId(d.getSender().getWalletId())

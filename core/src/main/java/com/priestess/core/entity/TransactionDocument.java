@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
  *   <li>{@code PENDING} — Jejak rekam awal dibuat, PostgreSQL belum diubah.</li>
  *   <li>{@code SUCCESS} — Mutasi saldo PostgreSQL berhasil.</li>
  *   <li>{@code FAILED}  — PostgreSQL rollback, field {@code note} berisi detail error.</li>
+ *   <li>{@code DENIED}  — QRIS tidak dibayar dalam batas waktu (5 menit kedaluwarsa).</li>
  * </ul>
  *
  * <p>Desain ini memastikan tidak ada transaksi yang "hilang tanpa jejak"
@@ -100,6 +101,17 @@ public class TransactionDocument {
     @Field("created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    /**
+     * Batas waktu pembayaran QRIS.
+     *
+     * <p>Diisi saat {@code generateQris()} dengan nilai {@code createdAt + 5 menit}.
+     * Null untuk transaksi non-QRIS (Transfer, Voucher, dll).
+     * Scheduler {@code QrisExpiryScheduler} akan mengubah status menjadi
+     * {@code DENIED} jika {@code expiresAt < now()} dan status masih {@code PENDING}.
+     */
+    @Field("expires_at")
+    private LocalDateTime expiresAt;
 
     // =========================================================================
     // NESTED EMBEDDED DOCUMENT

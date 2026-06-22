@@ -66,10 +66,34 @@ public class FinanceController {
     public ResponseEntity<TransactionResponse> transfer(
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader(value = "X-User-Status", required = false) String status,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody TransferRequest request) {
-        log.info("[FinanceController] POST /api/finance/transfer — from={}, status={}", userId, status);
+        log.info("[FinanceController] POST /api/finance/transfer — from={}, status={}, role={}", userId, status, role);
         ensureActiveUser(status);
-        return ResponseEntity.ok(financeService.transfer(UUID.fromString(userId), request));
+        return ResponseEntity.ok(financeService.transfer(UUID.fromString(userId), role, request));
+    }
+
+    // =========================================================================
+    // POST /api/finance/transfer/to-owner
+    // =========================================================================
+
+    /**
+     * Transfer dari dompet Merchant ke dompet Owner secara otomatis.
+     *
+     * <p>Owner diidentifikasi dari mapping data di database — merchant tidak
+     * perlu menginput nomor/username owner secara manual. Request body hanya
+     * berisi {@code amount} dan {@code note}.
+     */
+    @PostMapping("/transfer/to-owner")
+    public ResponseEntity<TransactionResponse> transferToOwner(
+            @RequestHeader("X-User-Id") String merchantId,
+            @RequestHeader(value = "X-User-Status", required = false) String status,
+            @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, Object> body) {
+        log.info("[FinanceController] POST /api/finance/transfer/to-owner — merchantId={}, status={}", merchantId, status);
+        ensureActiveUser(status);
+        java.math.BigDecimal amount = new java.math.BigDecimal(body.get("amount").toString());
+        String note = body.containsKey("note") ? body.get("note").toString() : null;
+        return ResponseEntity.ok(financeService.transferToOwner(UUID.fromString(merchantId), amount, note));
     }
 
     // =========================================================================

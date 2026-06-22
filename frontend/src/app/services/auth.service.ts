@@ -112,4 +112,17 @@ export class AuthService {
   hasPermission(permission: string): boolean {
     return this.getUserPermissions().includes(permission);
   }
+
+  resolveUser(query: string): Observable<{ userId: string, username: string, email: string }> {
+    return this.http.get<{ userId: string, username: string, email: string }>(`/api/auth/resolve?query=${encodeURIComponent(query)}`);
+  }
+
+  registerMerchantByOwner(data: {
+    username: string;
+    password: string;
+    merchantName: string;
+    address: string;
+  }): Observable<any> {
+    return this.http.post<any>('/api/identity/merchant/register', data);
+  }
 }

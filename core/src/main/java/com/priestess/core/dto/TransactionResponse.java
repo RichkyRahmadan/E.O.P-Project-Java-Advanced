@@ -19,6 +19,8 @@ public class TransactionResponse {
     private PartyInfo   sender;
     private PartyInfo   recipient;
     private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
+    private String      rawQrisData;
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PartyInfo {

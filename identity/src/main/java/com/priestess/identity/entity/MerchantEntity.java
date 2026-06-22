@@ -61,6 +61,13 @@ public class MerchantEntity {
     private String address;
 
     /**
+     * User pemilik merchant ini (sebagai owner).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", foreignKey = @ForeignKey(name = "fk_merchant_owner"))
+    private UserEntity owner;
+
+    /**
      * Status verifikasi KYC merchant.
      * {@code false} = belum terverifikasi (default setelah pendaftaran).
      * {@code true}  = sudah diverifikasi oleh Admin; merchant dapat menerima pembayaran QRIS.

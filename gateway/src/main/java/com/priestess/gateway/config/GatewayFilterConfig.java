@@ -84,6 +84,28 @@ public class GatewayFilterConfig {
                 .build();
     }
 
+    /**
+     * Route untuk endpoint identity terproteksi (merchant registration dari user dashboard, dll).
+     *
+     * <p>Path {@code /api/identity/**} memerlukan JWT yang valid.
+     * Filter akan memvalidasi token dan menyuntikkan {@code X-User-Id},
+     * {@code X-User-Status}, {@code X-User-Role} ke dalam header
+     * sebelum diteruskan ke Identity Service.
+     *
+     * @return router function untuk Identity Service protected endpoints
+     */
+    @Bean
+    public RouterFunction<ServerResponse> identityServiceProtectedRoute() {
+        log.info("[GatewayConfig] Route Identity Protected terdaftar: /api/identity/** -> http://localhost:8081");
+
+        return GatewayRouterFunctions.route("identity-service-protected")
+                .route(request -> request.path().startsWith("/api/identity/"),
+                        HandlerFunctions.http())
+                .before(BeforeFilterFunctions.uri(identityUri))
+                .filter(gatewayJwtFilter)
+                .build();
+    }
+
     // =========================================================================
     // ROUTE 2: Core Finance Service — DILINDUNGI JWT
     // =========================================================================

@@ -55,6 +55,16 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByEmail(String email);
 
     /**
+     * Mencari pengguna berdasarkan nomor telepon.
+     */
+    Optional<UserEntity> findByPhone(String phone);
+
+    /**
+     * Memeriksa apakah nomor telepon sudah terdaftar.
+     */
+    boolean existsByPhone(String phone);
+
+    /**
      * Mencari pengguna berdasarkan nilai Refresh Token yang tersimpan.
      *
      * <p>Digunakan pada endpoint {@code POST /api/auth/refresh}. Setelah

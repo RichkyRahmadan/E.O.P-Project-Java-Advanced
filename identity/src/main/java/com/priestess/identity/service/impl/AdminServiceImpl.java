@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import java.util.UUID;
@@ -67,6 +68,10 @@ public class AdminServiceImpl implements AdminService {
         user.setStatus("ACTIVE");
         userRepository.save(user);
         log.info("[AdminService] KYC diverifikasi — userId={}, status diubah ke ACTIVE.", userId);
+
+        // Perbarui seluruh sesi Redis aktif milik user ini agar Gateway
+        // langsung membaca status ACTIVE tanpa perlu logout-login ulang.
+        refreshActiveSessionsInRedis(user);
     }
 
     // =========================================================================
@@ -136,6 +141,67 @@ public class AdminServiceImpl implements AdminService {
             user.setStatus("ACTIVE");
             userRepository.save(user);
             log.info("[AdminService] Status user milik merchant otomatis diubah menjadi ACTIVE");
+
+            // Perbarui seluruh sesi Redis aktif milik merchant ini agar Gateway
+            // langsung membaca status ACTIVE tanpa perlu logout-login ulang.
+            refreshActiveSessionsInRedis(user);
+        }
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    /**
+     * Memperbarui semua sesi Redis aktif milik {@code user} dengan status ACTIVE.
+     *
+     * <p>Format sesi (6 bagian dipisah {@code :::}):
+     * {@code userId:::username:::email:::role:::status:::permissions}
+     *
+     * <p>Method ini membaca semua token aktif dari Set {@code user:sessions:<userId>},
+     * lalu mengganti bagian ke-4 (index 4, status) dengan {@code "ACTIVE"} untuk
+     * setiap sesi yang masih ada, mempertahankan TTL aslinya.
+     *
+     * @param user entitas user yang baru saja di-ACTIVE-kan
+     */
+    private void refreshActiveSessionsInRedis(UserEntity user) {
+        String userSessionsKey = "user:sessions:" + user.getId().toString();
+        try {
+            Set<String> activeTokens = redisTemplate.opsForSet().members(userSessionsKey);
+            if (activeTokens == null || activeTokens.isEmpty()) {
+                log.debug("[AdminService] Tidak ada sesi aktif di Redis untuk userId={} — tidak perlu diperbarui.",
+                        user.getId());
+                return;
+            }
+
+            for (String token : activeTokens) {
+                String sessionKey = "session:" + token;
+                String sessionRaw = redisTemplate.opsForValue().get(sessionKey);
+                if (sessionRaw == null) continue; // sesi sudah expired
+
+                String[] parts = sessionRaw.split(":::", -1);
+                if (parts.length >= 6) {
+                    // Ganti bagian ke-4 (index 4) — status — dengan ACTIVE
+                    parts[4] = "ACTIVE";
+                    String updatedSession = String.join(":::", parts);
+
+                    // Ambil TTL sisa agar tidak memperpanjang umur token
+                    Long ttlSeconds = redisTemplate.getExpire(sessionKey, TimeUnit.SECONDS);
+                    long remainingTtl = (ttlSeconds != null && ttlSeconds > 0) ? ttlSeconds : 900L;
+
+                    redisTemplate.opsForValue().set(sessionKey, updatedSession, remainingTtl, TimeUnit.SECONDS);
+                    log.debug("[AdminService] Sesi Redis diperbarui ke ACTIVE — token prefix={}, ttlSisa={}s",
+                            token.substring(0, Math.min(token.length(), 12)), remainingTtl);
+                }
+            }
+
+            log.info("[AdminService] {} sesi Redis berhasil diperbarui ke ACTIVE untuk userId={}",
+                    activeTokens.size(), user.getId());
+
+        } catch (Exception e) {
+            // Gagal refresh Redis tidak membatalkan verifikasi (DB sudah terupdate)
+            // Merchant hanya perlu logout dan login ulang sebagai fallback.
+            log.error("[AdminService] Gagal memperbarui sesi Redis saat verifikasi: {}", e.getMessage(), e);
         }
     }
 
